@@ -1,28 +1,7 @@
-# Azure IoT Edge LoRaWAN Starter Kit
-
-[![LoRa CI](https://github.com/Azure/iotedge-lorawan-starterkit/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/Azure/iotedge-lorawan-starterkit/actions/workflows/ci.yaml)
-[![LoRa CI](https://github.com/Azure/iotedge-lorawan-starterkit/actions/workflows/ci.yaml/badge.svg?branch=dev)](https://github.com/Azure/iotedge-lorawan-starterkit/actions/workflows/ci.yaml)
-[![Markdown](https://github.com//Azure/iotedge-lorawan-starterkit/actions/workflows/md-linter.yaml/badge.svg?branch=dev)](https://github.com/Azure/iotedge-lorawan-starterkit/actions/workflows/md-linter.yaml)
-[![codecov](https://codecov.io/gh/Azure/iotedge-lorawan-starterkit/branch/dev/graph/badge.svg)](https://codecov.io/gh/Azure/iotedge-lorawan-starterkit)
+# Azure IoT LoRaWAN Starter Kit
 
 The LoRaWAN starter kit is an OSS cross platform private network implementation
-of the [LoRaWAN specification](https://lora-alliance.org/resource_hub/lorawan-specification-v1-0-2/)
-built for connectivity to Azure IoT Hub. It enables users to setup their own
-LoRaWAN network that can connect to LoRa based nodes (sensors) and send decoded
-message packets to Azure IoT Hub for cloud based processing, analytics and other
-workloads. Alternatively, it allows sending commands from the cloud to the end
-nodes. The goal of the the project is to provide guidance and a reference for
-Azure IoT Edge users to experiment with LoRaWAN technology.
-
-![Architecture](https://azure.github.io/iotedge-lorawan-starterkit/dev/images/EdgeArchitecture.png)
-
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Known Issues and Limitations](#known-issues-and-limitations)
-- [Tested Gateways](#tested-gateways)
-- [Support](#support)
-- [Contributing](#contributing)
+of the [LoRaWAN specification](https://lora-alliance.org/resource_hub/lorawan-specification-v1-0-2/).
 
 ## Features
 
@@ -43,13 +22,6 @@ for more details)
 The following should be completed before proceeding with the LoRaWAN starter kit
 development or deployment in your environment.
 
-- You must have an Azure subscription. Get an
-[Azure Free account](https://azure.microsoft.com/en-us/offers/ms-azr-0044p/)
-to get started.
-- We are based on Azure IoT Edge so it is important that you understand the
-concepts and deployment model for Azure IoT Edge. Refer to Azure
-[IoT Edge documentation](https://docs.microsoft.com/en-us/azure/iot-edge/)
-to see how it works.
 - Understand how LoRa and LoRaWAN works. A great primer is available at the
 [LoRa Alliance website](https://lora-alliance.org/resource_hub/what-is-lorawan/).
 - To test the solution on a device, you need to have a LoRaWAN Device Kit
@@ -117,34 +89,3 @@ Refer to the [Dev Guide][devguide] for development and debugging instructions.
 [knownissues]:          https://azure.github.io/iotedge-lorawan-starterkit/dev/issues/
 [partnerinstructions]:  https://azure.github.io/iotedge-lorawan-starterkit/dev/user-guide/partner/
 [specificationsupport]: https://azure.github.io/iotedge-lorawan-starterkit/dev/#lorawan-specification-support
-
-## Create a release
-
-You can create a release with the following steps:
-
-### Write release notes
-
-Write release notes to the [release notes documentation](https://github.com/Azure/iotedge-lorawan-starterkit/blob/docs/main/docs/release-notes.md).
-
-### Run the Release workflow to create a draft release
-
-Go to the [Create draft release workflow](https://github.com/Azure/iotedge-lorawan-starterkit/actions/workflows/create_release.yaml) and specify the release version before running the workflow.
-
-### Create and merge 2 PRs
-
-The release workflow will create 2 branches:
-- `docs/release-${RELEASE_VERSION}-${GITHUB_RUN_ID}`
-This branch updates the Button URL.
-
-- `feature/update-version-${RELEASE_VERSION}-${GITHUB_RUN_ID}`
-This branch updates the Starter Kit version in Bicep.
-
-Created 2 PRs from these branches, verify the PRs look good and merge them.
-
-### Update master
-
-Push dev branch to master
-
-### Add a release description and publish the release
-
-In Github, select the release created by the workflow, add a good description, and publish the release.
