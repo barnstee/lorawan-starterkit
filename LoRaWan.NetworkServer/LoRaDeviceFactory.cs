@@ -10,36 +10,14 @@ namespace LoRaWan.NetworkServer
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Extensions.Logging;
 
-    public class LoRaDeviceFactory : ILoRaDeviceFactory
+    public class LoRaDeviceFactory(NetworkServerConfiguration configuration,
+                             ILoRaDataRequestHandler dataRequestHandler,
+                             ILoRaDeviceClientConnectionManager connectionManager,
+                             LoRaDeviceCache loRaDeviceCache,
+                             ILoggerFactory loggerFactory,
+                             ILogger<LoRaDeviceFactory> logger,
+                             Meter meter) : ILoRaDeviceFactory
     {
-        private readonly NetworkServerConfiguration configuration;
-        private readonly ILoRaDataRequestHandler dataRequestHandler;
-        private readonly ILoRaDeviceClientConnectionManager connectionManager;
-        private readonly LoRaDeviceCache loRaDeviceCache;
-        private readonly ILoggerFactory loggerFactory;
-        private readonly ILogger<LoRaDeviceFactory> logger;
-        private readonly Meter meter;
-        private readonly ITracing tracing;
-
-        public LoRaDeviceFactory(NetworkServerConfiguration configuration,
-                                 ILoRaDataRequestHandler dataRequestHandler,
-                                 ILoRaDeviceClientConnectionManager connectionManager,
-                                 LoRaDeviceCache loRaDeviceCache,
-                                 ILoggerFactory loggerFactory,
-                                 ILogger<LoRaDeviceFactory> logger,
-                                 Meter meter,
-                                 ITracing tracing)
-        {
-            this.configuration = configuration;
-            this.dataRequestHandler = dataRequestHandler;
-            this.connectionManager = connectionManager;
-            this.loggerFactory = loggerFactory;
-            this.logger = logger;
-            this.meter = meter;
-            this.tracing = tracing;
-            this.loRaDeviceCache = loRaDeviceCache;
-        }
-
         public Task<LoRaDevice> CreateAndRegisterAsync(IoTHubDeviceInfo deviceInfo, CancellationToken cancellationToken)
         {
             _ = deviceInfo ?? throw new ArgumentNullException(nameof(deviceInfo));
@@ -47,7 +25,7 @@ namespace LoRaWan.NetworkServer
             if (string.IsNullOrEmpty(deviceInfo.PrimaryKey) || !deviceInfo.DevEUI.IsValid)
                 throw new ArgumentException($"Incomplete {nameof(IoTHubDeviceInfo)}", nameof(deviceInfo));
 
-            if (this.loRaDeviceCache.TryGetByDevEui(deviceInfo.DevEUI, out _))
+            if (loRaDeviceCache.TryGetByDevEui(deviceInfo.DevEUI, out _))
                 throw new InvalidOperationException($"Device {deviceInfo.DevEUI} already registered");
 
             return RegisterCoreAsync(deviceInfo, cancellationToken);
@@ -65,17 +43,17 @@ namespace LoRaWan.NetworkServer
                 // even though, we don't own it, to detect ownership
                 // changes.
                 // Ownership is transferred to connection manager.
-                this.connectionManager.Register(loRaDevice, loRaDeviceClient);
+                connectionManager.Register(loRaDevice, loRaDeviceClient);
 
-                loRaDevice.SetRequestHandler(this.dataRequestHandler);
+                loRaDevice.SetRequestHandler(dataRequestHandler);
 
-                if (loRaDevice.UpdateIsOurDevice(this.configuration.GatewayID) &&
-                    !await loRaDevice.InitializeAsync(this.configuration, cancellationToken))
+                if (loRaDevice.UpdateIsOurDevice(configuration.GatewayID) &&
+                    !await loRaDevice.InitializeAsync(configuration, cancellationToken))
                 {
                     throw new LoRaProcessingException("Failed to initialize device twins.", LoRaProcessingErrorCode.DeviceInitializationFailed);
                 }
 
-                this.loRaDeviceCache.Register(loRaDevice);
+                loRaDeviceCache.Register(loRaDevice);
 
                 return loRaDevice;
             }
@@ -85,14 +63,14 @@ namespace LoRaWan.NetworkServer
                 // a connection registered, we will leak this client.
                 await loRaDeviceClient.DisposeAsync();
 
-                if (this.logger.IsEnabled(LogLevel.Debug))
+                if (logger.IsEnabled(LogLevel.Debug))
                 {
                     try
                     {
                         // if the created client is registered, release it
-                        if (!ReferenceEquals(loRaDeviceClient, ((IIdentityProvider<ILoRaDeviceClient>)this.connectionManager.GetClient(loRaDevice)).Identity))
+                        if (!ReferenceEquals(loRaDeviceClient, ((IIdentityProvider<ILoRaDeviceClient>)connectionManager.GetClient(loRaDevice)).Identity))
                         {
-                            this.logger.LogDebug("leaked connection found");
+                            logger.LogDebug("leaked connection found");
                         }
                     }
                     catch (ManagedConnectionException) { }
@@ -109,9 +87,9 @@ namespace LoRaWan.NetworkServer
                     ? throw new ArgumentNullException(nameof(deviceInfo))
                     : new LoRaDevice(deviceInfo.DevAddr,
                                      deviceInfo.DevEUI,
-                                     this.connectionManager,
-                                     this.loggerFactory.CreateLogger<LoRaDevice>(),
-                                     this.meter)
+                                     connectionManager,
+                                     loggerFactory.CreateLogger<LoRaDevice>(),
+                                     meter)
                     {
                         GatewayID = deviceInfo.GatewayId,
                         NwkSKey = deviceInfo.NwkSKey,
@@ -122,21 +100,21 @@ namespace LoRaWan.NetworkServer
         {
             var connectionString = string.Empty;
 
-            if (string.IsNullOrEmpty(this.configuration.IoTHubHostName))
+            if (string.IsNullOrEmpty(configuration.IoTHubHostName))
             {
-                this.logger.LogError("Configuration/Environment variable IOTEDGE_IOTHUBHOSTNAME not found, creation of iothub connection not possible");
+                logger.LogError("Configuration/Environment variable IOTEDGE_IOTHUBHOSTNAME not found, creation of iothub connection not possible");
             }
 
-            connectionString += $"HostName={this.configuration.IoTHubHostName};";
+            connectionString += $"HostName={configuration.IoTHubHostName};";
 
-            if (this.configuration.EnableGateway)
+            if (configuration.EnableGateway)
             {
-                connectionString += $"GatewayHostName={this.configuration.GatewayHostName};";
-                this.logger.LogDebug($"using edgeHub local queue");
+                connectionString += $"GatewayHostName={configuration.GatewayHostName};";
+                logger.LogDebug($"using edgeHub local queue");
             }
             else
             {
-                this.logger.LogDebug("using iotHub directly, no edgeHub queue");
+                logger.LogDebug("using iotHub directly, no edgeHub queue");
             }
 
             return connectionString;
@@ -161,17 +139,16 @@ namespace LoRaWan.NetworkServer
                             // in case you need more, and the communications are proxied through edgeHub,
                             // please consider changing this parameter in edgeHub configuration too
                             // https://github.com/Azure/iotedge/blob/e6d52d6f6b0eb76e7ef250f3fcdeaf38e467ab4f/doc/EnvironmentVariables.md
-                            MaxPoolSize = this.configuration.IotHubConnectionPoolSize
+                            MaxPoolSize = configuration.IotHubConnectionPoolSize
                         },
                         OperationTimeout = TimeSpan.FromSeconds(10)
                     }
                 };
 
                 var client = new LoRaDeviceClient(deviceId, deviceConnectionStr, transportSettings,
-                                                  this.loggerFactory.CreateLogger<LoRaDeviceClient>(), this.meter,
-                                                  this.tracing);
+                                                  loggerFactory.CreateLogger<LoRaDeviceClient>(), meter);
 
-                return client.AddResiliency(this.loggerFactory);
+                return client.AddResiliency(loggerFactory);
             }
             catch (Exception ex)
             {

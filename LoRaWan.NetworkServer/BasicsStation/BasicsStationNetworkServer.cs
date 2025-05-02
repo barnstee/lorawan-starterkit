@@ -10,7 +10,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System.Threading;
     using System.Threading.Tasks;
     using LoRaWan.NetworkServer.BasicsStation.ModuleConnection;
-    using Microsoft.ApplicationInsights;
     using Microsoft.AspNetCore;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -47,8 +46,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
                                        })
                                        .Build();
 
-            var telemetryClient = webHost.Services.GetService<TelemetryClient>();
-
             try
             {
                 // We want to make sure the module connection is started at the start of the Network server.
@@ -63,7 +60,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
             }
             finally
             {
-                telemetryClient?.Flush();
                 await Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None);
             }
         }

@@ -114,7 +114,7 @@ namespace LoRaWan
         public static LoRaDataRate Parse(ReadOnlySpan<char> input) =>
             TryParse(input, out var result) ? result : throw new FormatException();
 
-        public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out LoRaDataRate? result)
+        public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out LoRaDataRate result)
         {
             result = null;
 

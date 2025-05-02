@@ -15,9 +15,9 @@ namespace LoRaWan
     {
         public double Units => Value * 1e6;
 
-        public string ToString(IFormatProvider? formatProvider) => ToString(null, formatProvider);
-        public string ToString(string? format) => ToString(format, null);
-        public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
+        public string ToString(IFormatProvider formatProvider) => ToString(null, formatProvider);
+        public string ToString(string format) => ToString(format, null);
+        public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
         public override string ToString() => ToString(null, CultureInfo.CurrentCulture);
     }
 }

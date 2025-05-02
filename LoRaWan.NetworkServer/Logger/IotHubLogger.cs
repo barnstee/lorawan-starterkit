@@ -21,23 +21,21 @@ namespace LoRaWan.NetworkServer.Logger
     {
         private readonly ConcurrentDictionary<string, IotHubLogger> loggers = new();
         private readonly Lazy<Task<ModuleClient>> moduleClientFactory;
-        private readonly ITracing tracing;
 
         internal LoggerConfigurationMonitor LoggerConfigurationMonitor { get; }
 
-        public IotHubLoggerProvider(IOptionsMonitor<LoRaLoggerConfiguration> configuration, ITracing tracing)
-            : this(configuration, new Lazy<Task<ModuleClient>>(ModuleClient.CreateFromEnvironmentAsync(new[] { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) })), tracing)
+        public IotHubLoggerProvider(IOptionsMonitor<LoRaLoggerConfiguration> configuration)
+            : this(configuration, new Lazy<Task<ModuleClient>>(ModuleClient.CreateFromEnvironmentAsync(new[] { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) })))
         { }
 
-        internal IotHubLoggerProvider(IOptionsMonitor<LoRaLoggerConfiguration> configuration, Lazy<Task<ModuleClient>> moduleClientFactory, ITracing tracing)
+        internal IotHubLoggerProvider(IOptionsMonitor<LoRaLoggerConfiguration> configuration, Lazy<Task<ModuleClient>> moduleClientFactory)
         {
             LoggerConfigurationMonitor = new LoggerConfigurationMonitor(configuration);
             this.moduleClientFactory = moduleClientFactory;
-            this.tracing = tracing;
         }
 
         public ILogger CreateLogger(string categoryName) =>
-            this.loggers.GetOrAdd(categoryName, n => new IotHubLogger(this, this.moduleClientFactory, this.tracing));
+            this.loggers.GetOrAdd(categoryName, n => new IotHubLogger(this, this.moduleClientFactory));
 
         public void Dispose()
         {
@@ -47,8 +45,7 @@ namespace LoRaWan.NetworkServer.Logger
     }
 
     internal class IotHubLogger(IotHubLoggerProvider iotHubLoggerProvider,
-                        Lazy<Task<ModuleClient>> moduleClientFactory,
-                        ITracing tracing) : ILogger
+                        Lazy<Task<ModuleClient>> moduleClientFactory) : ILogger
     {
         private const string SendOperationName = "SDK SendEvent";
         private const string LogTraceData = "log";
@@ -88,7 +85,6 @@ namespace LoRaWan.NetworkServer.Logger
                             throw;
                         }
 
-                        using var sendOperation = tracing.TrackIotHubDependency(SendOperationName, LogTraceData);
                         await SendAsync(moduleClient, formattedMessage);
                     }
                     catch (Exception ex)

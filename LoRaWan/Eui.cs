@@ -76,7 +76,7 @@ namespace LoRaWan
 
     internal static class Eui
     {
-        public static string Format(ulong value, string? format)
+        public static string Format(ulong value, string format)
         {
             return format switch
             {

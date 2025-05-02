@@ -60,12 +60,12 @@ namespace LoRaWan
             init => this.value = SetNetworkAddress(this.value, value);
         }
 
-        private static uint SetNetworkId(uint devAddr, int value, [CallerArgumentExpression("value")] string? paramName = null) =>
+        private static uint SetNetworkId(uint devAddr, int value, [CallerArgumentExpression("value")] string paramName = null) =>
             value is >= 0 and <= MaxNetworkId
             ? (devAddr & NetworkAddressMask) | unchecked((uint)value << 25)
             : throw new ArgumentException(null, paramName);
 
-        private static uint SetNetworkAddress(uint devAddr, int value, [CallerArgumentExpression("value")] string? paramName = null) =>
+        private static uint SetNetworkAddress(uint devAddr, int value, [CallerArgumentExpression("value")] string paramName = null) =>
             value is >= 0 and <= MaxNetworkAddress
             ? (devAddr & NetworkIdMask) | unchecked((uint)value)
             : throw new ArgumentException(null, paramName);

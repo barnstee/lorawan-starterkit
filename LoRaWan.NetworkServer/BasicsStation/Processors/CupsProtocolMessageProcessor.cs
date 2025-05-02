@@ -60,17 +60,17 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                         return;
                     case var contentLength:
                     {
-                        var reader = httpContext.Request.BodyReader;
-                        var result = await reader.ReadAtLeastAsync(checked((int)contentLength), token);
+                        var reader = httpContext.Request.Body;
+                        Memory<byte> buffer = new byte[checked((int)contentLength)];
+                        var result = await reader.ReadAtLeastAsync(buffer, checked((int)contentLength), false, token);
 
-                        if (result.Buffer.Length != contentLength)
+                        if (buffer.Length != contentLength)
                         {
                             LogAndSetBadRequest(null, "Actual content length does not match the expected length of {ContentLength} bytes.", contentLength);
                             return;
                         }
 
-                        json = Encoding.UTF8.GetString(result.Buffer);
-                        reader.AdvanceTo(result.Buffer.End);
+                        json = Encoding.UTF8.GetString(buffer.ToArray());
                         break;
                     }
                 }
@@ -139,11 +139,11 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                 response.ContentType = "application/octet-stream";
                 response.ContentLength = updateResponseHeaderBytes.Length + firmwareLength;
 
-                _ = await response.BodyWriter.WriteAsync(updateResponseHeaderBytes, token);
+                await response.Body.WriteAsync(updateResponseHeaderBytes, token);
 
                 if (firmware is { } someFirmware)
                 {
-                    await someFirmware.CopyToAsync(response.BodyWriter.AsStream(), token);
+                    await someFirmware.CopyToAsync(response.Body, token);
                 }
             }
             catch (Exception ex) when (ExceptionFilterUtility.False(() => this.logger.LogError(ex, "An exception occurred while processing requests: {Exception}.", ex),

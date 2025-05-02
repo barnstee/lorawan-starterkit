@@ -35,7 +35,6 @@ namespace LoRaWan.NetworkServer
         private readonly string connectionString;
         private readonly ITransportSettings[] transportSettings;
         private readonly ILogger<LoRaDeviceClient> logger;
-        private readonly ITracing tracing;
         private readonly Counter<int> twinLoadRequests;
         private DeviceClient deviceClient;
 
@@ -43,8 +42,7 @@ namespace LoRaWan.NetworkServer
                                 string connectionString,
                                 ITransportSettings[] transportSettings,
                                 ILogger<LoRaDeviceClient> logger,
-                                Meter meter,
-                                ITracing tracing)
+                                Meter meter)
         {
             if (string.IsNullOrEmpty(connectionString)) throw new ArgumentException($"'{nameof(connectionString)}' cannot be null or empty.", nameof(connectionString));
 
@@ -54,7 +52,6 @@ namespace LoRaWan.NetworkServer
             this.deviceIdTracingData = $"id={deviceId}";
             this.connectionString = connectionString;
             this.logger = logger;
-            this.tracing = tracing;
             this.twinLoadRequests = meter.CreateCounter<int>(MetricRegistry.TwinLoadRequests);
             _ = meter.CreateObservableGauge(MetricRegistry.ActiveClientConnections, () => activeDeviceConnections);
             this.deviceClient = CreateDeviceClient();
@@ -67,7 +64,6 @@ namespace LoRaWan.NetworkServer
             try
             {
                 this.logger.LogDebug("getting device twin");
-                using var getTwinOperation = this.tracing.TrackIotHubDependency(GetTwinDependencyName, this.deviceIdTracingData);
 
                 var twins = await this.deviceClient.GetTwinAsync(cancellationToken);
 
@@ -102,7 +98,6 @@ namespace LoRaWan.NetworkServer
                 }
 
                 this.logger.LogDebug("updating twin");
-                using var updateReportedPropertiesOperation = this.tracing.TrackIotHubDependency(UpdateReportedPropertiesDependencyName, this.deviceIdTracingData);
 
                 await this.deviceClient.UpdateReportedPropertiesAsync(reportedProperties, cancellationToken);
 
@@ -141,7 +136,6 @@ namespace LoRaWan.NetworkServer
                             message.Properties.Add(prop);
                     }
 
-                    using var sendEventOperation = this.tracing.TrackIotHubDependency(SendEventDependencyName, this.deviceIdTracingData);
                     await this.deviceClient.SendEventAsync(message);
 
                     return true;
@@ -161,7 +155,6 @@ namespace LoRaWan.NetworkServer
             {
                 this.logger.LogDebug($"checking cloud to device message for {timeout}");
 
-                using var receiveOperation = this.tracing.TrackIotHubDependency(ReceiveDependencyName, this.deviceIdTracingData);
                 var msg = await this.deviceClient.ReceiveAsync(timeout);
 
                 if (this.logger.IsEnabled(LogLevel.Debug))
@@ -198,7 +191,6 @@ namespace LoRaWan.NetworkServer
             try
             {
                 this.logger.LogDebug("'{OperationName}' cloud to device message, id: '{MessageId}'.", operationName, messageId);
-                using var dependencyOperation = this.tracing.TrackIotHubDependency(GetSdkDependencyName(operationName), $"{this.deviceIdTracingData}&messageId={messageId}");
 
                 await executeAsync(this.deviceClient, cloudToDeviceMessage);
 
