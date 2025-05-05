@@ -6,7 +6,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Jacob;
     using LoRaTools.Regions;
 
     internal sealed class BasicsStationConfigurationService() : IBasicsStationConfigurationService, IDisposable
@@ -15,11 +14,11 @@ namespace LoRaWan.NetworkServer.BasicsStation
         internal const string CupsPropertyName = "cups";
         internal const string ClientThumbprintPropertyName = "clientThumbprint";
 
-        private static readonly IJsonReader<DwellTimeSetting> DwellTimeConfigurationReader =
-            JsonReader.Object(JsonReader.Property("downlinkDwellLimit", JsonReader.Boolean()),
-                              JsonReader.Property("uplinkDwellLimit", JsonReader.Boolean()),
-                              JsonReader.Property("eirp", JsonReader.UInt32()),
-                              (downlinkDwellLimit, uplinkDwellLimit, eirp) => new DwellTimeSetting(downlinkDwellLimit, uplinkDwellLimit, eirp));
+        //private static readonly IJsonReader<DwellTimeSetting> DwellTimeConfigurationReader =
+        //    JsonReader.Object(JsonReader.Property("downlinkDwellLimit", JsonReader.Boolean()),
+        //                      JsonReader.Property("uplinkDwellLimit", JsonReader.Boolean()),
+        //                      JsonReader.Property("eirp", JsonReader.UInt32()),
+        //                      (downlinkDwellLimit, uplinkDwellLimit, eirp) => new DwellTimeSetting(downlinkDwellLimit, uplinkDwellLimit, eirp));
 
         private static readonly TimeSpan CacheTimeout = TimeSpan.FromHours(2);
         private readonly SemaphoreSlim cacheSemaphore = new SemaphoreSlim(1);
@@ -31,7 +30,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
             throw new NotImplementedException();
         }
 
-        Task<CupsTwinInfo> IBasicsStationConfigurationService.GetCupsConfigAsync(StationEui stationEui, CancellationToken cancellationToken)
+        Task<CupsTwinInfo> IBasicsStationConfigurationService.GetCupsConfigAsync(StationEui? stationEui, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

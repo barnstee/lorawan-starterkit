@@ -50,14 +50,14 @@ namespace LoRaWan.NetworkServer
         /// Fetch station credentials in IoT Hub.
         /// </summary>
         /// <param name="eui">EUI of the station.</param>
-        public abstract Task<string> FetchStationCredentialsAsync(StationEui eui, ConcentratorCredentialType credentialtype, CancellationToken token);
+        public abstract Task<string> FetchStationCredentialsAsync(StationEui? eui, ConcentratorCredentialType credentialtype, CancellationToken token);
 
         /// <summary>
         /// Fetch station firmware file.
         /// </summary>
         /// <param name="eui">EUI of the station.</param>
         /// <returns>An instance of <see cref="HttpContent"/> with the firmware content.</returns>
-        public abstract Task<HttpContent> FetchStationFirmwareAsync(StationEui eui, CancellationToken token);
+        public abstract Task<HttpContent> FetchStationFirmwareAsync(StationEui? eui, CancellationToken token);
 
         /// <summary>
         /// Searches the primary key for a LoRa device in IoT Hub.

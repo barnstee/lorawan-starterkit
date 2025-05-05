@@ -3,150 +3,159 @@
 
 namespace LoRaWan.NetworkServer.BasicsStation.JsonHandlers
 {
-    using System;
-    using System.Text.Json;
-    using Jacob;
+    using System.Runtime.Serialization;
 
     public static class LnsData
     {
-        internal static readonly IJsonReader<LnsMessageType> MessageTypeReader =
-            JsonReader.Object(MessageTypeProperty());
-
-        private static IJsonProperty<LnsMessageType> MessageTypeProperty(LnsMessageType? expectedType = null) =>
-            JsonReader.Property("msgtype",
-                                from t in JsonReader.String()
-                                select LnsMessageTypeParser.ParseAndValidate(t, expectedType));
-
-        /*
-            {
-                "msgtype"   : "version"
-                "station"   : STRING
-                "firmware"  : STRING
-                "package"   : STRING
-                "model"     : STRING
-                "protocol"  : INT
-                "features"  : STRING
-            }
-         */
-
-        // We are deliberately ignoring firmware/model/protocol/features as these are not strictly needed at this stage of implementation
-        // TODO Tests for this method are missing (waiting for more usefulness of it)
-
-        internal static readonly IJsonReader<(string Station, string Package)> VersionMessageReader =
-            JsonReader.Object(JsonReader.Property("station", JsonReader.String()),
-                              JsonReader.Property("package", from s in JsonReader.String().OrNull()
-                                                             select string.IsNullOrEmpty(s) ? string.Empty : s),
-                              (s, p) => (s, p));
-
-
-        /*
-                  {
-                    ...
-                    "DR"    : INT,
-                    "Freq"  : INT,
-                    "upinfo": {
-                      "rctx"    : INT64,
-                      "xtime"   : INT64,
-                      "gpstime" : INT64,
-                      "rssi"    : FLOAT,
-                      "snr"     : FLOAT
-                    }
-                  }
-               */
-
-        internal static class RadioMetadataProperties
+        [DataContract]
+        public class VersionMessage
         {
-            public static readonly IJsonProperty<DataRateIndex> DataRate =
-                JsonReader.Property("DR", JsonReader.Byte().AsEnum(v => (DataRateIndex)v));
+            [DataMember(Name = "msgtype")]
+            public LnsMessageType MessageType { get; set; }
 
-            public static readonly IJsonProperty<Hertz> Freq =
-                JsonReader.Property("Freq", from n in JsonReader.UInt32() select new Hertz(n));
+            [DataMember(Name = "station")]
+            public string Station { get; set; }
 
-            public static readonly IJsonProperty<RadioMetadataUpInfo> UpInfo =
-                JsonReader.Property("upinfo",
-                                    JsonReader.Object(JsonReader.Property("rctx", JsonReader.UInt32()),
-                                                      JsonReader.Property("xtime", JsonReader.UInt64()),
-                                                      JsonReader.Property("gpstime", JsonReader.UInt32()),
-                                                      JsonReader.Property("rssi", JsonReader.Double()),
-                                                      JsonReader.Property("snr", JsonReader.Single()),
-                                                      (rctx, xtime, gpsTime, rssi, snr) => new RadioMetadataUpInfo(rctx, xtime, gpsTime, rssi, snr)));
+            [DataMember(Name = "firmware")]
+            public string Firmware { get; set; }
+
+            [DataMember(Name = "package")]
+            public string Package { get; set; }
+
+            [DataMember(Name = "model")]
+            public string Model { get; set; }
+
+            [DataMember(Name = "protocol")]
+            public int Protocol { get; set; }
+
+            [DataMember(Name = "features")]
+            public string Features { get; set; }
         }
 
-        private static readonly IJsonProperty<Mic> MicProperty =
-            JsonReader.Property("MIC", from i in JsonReader.Int32()
-                                       select new Mic(unchecked(i)));
+        [DataContract]
+        public class UpstreamDataFrame
+        {
+            [DataMember(Name = "msgtype")]
+            public string MessageType { get; set; }
 
-        /*
-            {
-              "msgtype"   : "updf",
-              "MHdr"      : UINT,
-              "DevAddr"   : INT32,
-              "FCtrl"     : UINT,
-              "FCnt",     : UINT,
-              "FOpts"     : "HEX",
-              "FPort"     : INT(-1..255),
-              "FRMPayload": "HEX",
-              "MIC"       : INT32,
-              ..
-              RADIOMETADATA
-            }
-         */
+            [DataMember(Name = "MHdr")]
+            public uint MHdr { get; set; }
 
-        internal static readonly IJsonReader<UpstreamDataFrame> UpstreamDataFrameReader =
-            JsonReader.Object(MessageTypeProperty(LnsMessageType.UplinkDataFrame),
-                              JsonReader.Property("MHdr", JsonReader.Byte()),
-                              JsonReader.Property("DevAddr", JsonReader.UInt32()),
-                              JsonReader.Property("FCtrl", from b in JsonReader.Byte() select FrameControl.Decode(b).Flags),
-                              JsonReader.Property("FCnt", JsonReader.UInt16()),
-                              JsonReader.Property("FOpts", JsonReader.String()),
-                              JsonReader.Property("FPort", JsonReader.Either(from n in JsonReader.Byte()
-                                                                             select (FramePort?)n,
-                                                                             from _ in JsonReader.Int32().Validate(n => n == -1)
-                                                                             select (FramePort?)null,
-                                                                             "Invalid FPort in JSON, which must be either -1 or 0..255.")),
-                              JsonReader.Property("FRMPayload", JsonReader.String()),
-                              MicProperty,
-                              RadioMetadataProperties.DataRate,
-                              RadioMetadataProperties.Freq,
-                              RadioMetadataProperties.UpInfo,
-                              (_, mhdr, devAddr, fctrlFlags, cnt, opts, port, payload, mic, dr, freq, upInfo) =>
-                                port is null && payload.Length > 0
-                                    ? throw new JsonException(@"""FRMPayload"" without an ""FPort"" is forbidden.")
-                                    : new UpstreamDataFrame(new MacHeader(mhdr), new DevAddr(devAddr), fctrlFlags, cnt, opts, port, payload, mic,
-                                                            new RadioMetadata(dr, freq, upInfo)));
-        /*
-         * {
-              "msgtype" : "jreq",
-              "MHdr"    : UINT,
-              "JoinEui" : EUI,
-              "DevEui"  : EUI,
-              "DevNonce": UINT,
-              "MIC"     : INT32,
-              ..
-              RADIOMETADATA
-            }
-         */
+            [DataMember(Name = "DevAddr")]
+            public int DevAddr { get; set; }
 
-        private static IJsonProperty<T> EuiProperty<T>(string name, Func<ulong, T> factory, char separator = '-') =>
-            JsonReader.Property(name,
-                                from s in JsonReader.String()
-                                select Hexadecimal.TryParse(s, out ulong eui, separator)
-                                     ? factory(eui)
-                                     : throw new JsonException($"Could not parse {name} as {typeof(T)}."));
+            [DataMember(Name = "FCtrl")]
+            public uint FCtrl { get; set; }
 
-        internal static readonly IJsonReader<JoinRequestFrame> JoinRequestFrameReader =
-            JsonReader.Object(MessageTypeProperty(LnsMessageType.JoinRequest),
-                              JsonReader.Property("MHdr", JsonReader.Byte()),
-                              EuiProperty("JoinEui", eui => new JoinEui(eui)),
-                              EuiProperty("DevEui", eui => new DevEui(eui)),
-                              JsonReader.Property("DevNonce", JsonReader.UInt16()),
-                              MicProperty,
-                              RadioMetadataProperties.DataRate,
-                              RadioMetadataProperties.Freq,
-                              RadioMetadataProperties.UpInfo,
-                              (_, mhdr, joinEui, devEui, devNonce, mic, dr, freq, upInfo) =>
-                                new JoinRequestFrame(new MacHeader(mhdr), joinEui, devEui, new DevNonce(devNonce), mic,
-                                                     new RadioMetadata(dr, freq, upInfo)));
+            [DataMember(Name = "FCnt")]
+            public uint FCnt { get; set; }
+
+            [DataMember(Name = "FOpts")]
+            public string FOpts { get; set; }
+
+            [DataMember(Name = "FPort")]
+            public int FPort { get; set; }
+
+            [DataMember(Name = "FRMPayload")]
+            public string FRMPayload { get; set; }
+
+            [DataMember(Name = "MIC")]
+            public int MIC { get; set; }
+
+            [DataMember(Name = "RADIOMETADATA")]
+            public RadioMetadata RadioMetadata { get; set; }
+        }
+
+        [DataContract]
+        public class RadioMetadata
+        {
+            [DataMember(Name = "DR")]
+            public DataRateIndex DataRate { get; set; }
+
+            [DataMember(Name = "Freq")]
+            public Hertz Frequency { get; set; }
+
+            [DataMember(Name = "upinfo")]
+            public RadioMetadataUpInfo UpInfo { get; set; }
+        }
+
+        [DataContract]
+        public class RadioMetadataUpInfo
+        {
+            [DataMember(Name = "rctx")]
+            public uint AntennaPreference { get; set; }
+
+            [DataMember(Name = "xtime")]
+            public uint Xtime { get; set; }
+
+            [DataMember(Name = "gpstime")]
+            public uint GpsTime { get; set; }
+
+            [DataMember(Name = "rssi")]
+            public float ReceivedSignalStrengthIndication { get; set; }
+
+            [DataMember(Name = "snr")]
+            public float SignalNoiseRatio { get; set; }
+        }
+
+        [DataContract]
+        public class UpstreamDataMessage
+        {
+            [DataMember(Name = "msgtype")]
+            public LnsMessageType MessageType { get; set; }
+
+            [DataMember(Name = "MHdr")]
+            public MacHeader MacHeader { get; }
+
+            [DataMember(Name = "DevAddr")]
+            public DevAddr DevAddr { get; }
+
+            [DataMember(Name = "FCtrl")]
+            public FrameControlFlags FrameControlFlags { get; }
+
+            [DataMember(Name = "FCnt")]
+            public ushort Counter { get; }
+
+            [DataMember(Name = "FOpts")]
+            public string Options { get; }
+
+            [DataMember(Name = "FPort")]
+            public FramePort? Port { get; }
+
+            [DataMember(Name = "FRMPayload")]
+            public string Payload { get; }
+
+            [DataMember(Name = "MIC")]
+            public Mic Mic { get; }
+
+            [DataMember(Name = "RADIOMETADATA")]
+            public RadioMetadata RadioMetadata { get; }
+        }
+
+        [DataContract]
+        public class JoinRequestMessage
+        {
+            [DataMember(Name = "msgtype")]
+            public LnsMessageType MessageType { get; set; }
+
+            [DataMember(Name = "MHdr")]
+            public MacHeader MacHeader { get; }
+
+            [DataMember(Name = "JoinEUI")]
+            public JoinEui JoinEui { get; }
+
+            [DataMember(Name = "DevEUI")]
+            public DevEui DevEui { get; }
+
+            [DataMember(Name = "DevNonce")]
+            public DevNonce DevNonce { get; }
+
+            [DataMember(Name = "MIC")]
+            public Mic Mic { get; }
+
+            [DataMember(Name = "RADIOMETADATA")]
+            public RadioMetadata RadioMetadata { get; }
+        }
 
     }
 }

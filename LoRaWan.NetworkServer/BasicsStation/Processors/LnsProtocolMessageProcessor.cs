@@ -10,10 +10,8 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
     using System;
     using System.Diagnostics.Metrics;
     using System.Net.WebSockets;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using Jacob;
     using LoRaTools;
     using LoRaTools.LoRaMessage;
     using LoRaTools.NetworkServerDiscovery;
@@ -21,6 +19,8 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Routing;
     using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
+    using static LoRaWan.NetworkServer.BasicsStation.JsonHandlers.LnsData;
 
     internal class LnsProtocolMessageProcessor(IBasicsStationConfigurationService basicsStationConfigurationService,
                                        WebSocketWriterRegistry<StationEui, string> socketWriterRegistry,
@@ -106,12 +106,12 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                                                   string json,
                                                   CancellationToken cancellationToken)
         {
-            switch (LnsData.MessageTypeReader.Read(json))
+            switch (JsonConvert.DeserializeObject<LnsMessageType>(json))
             {
                 case LnsMessageType.Version:
-                    var (version, package) = LnsData.VersionMessageReader.Read(json);
-                    logger.LogInformation("Received 'version' message for station '{StationVersion}' with package '{StationPackage}'.", version, package);
-                    await basicsStationConfigurationService.SetReportedPackageVersionAsync(stationEui, package, cancellationToken);
+                    var versionMessage = JsonConvert.DeserializeObject<VersionMessage>(json);
+                    logger.LogInformation("Received 'version' message for station '{StationVersion}' with package '{StationPackage}'.", versionMessage.MessageType, versionMessage.Package);
+                    await basicsStationConfigurationService.SetReportedPackageVersionAsync(stationEui, versionMessage.Package, cancellationToken);
                     var routerConfigResponse = await basicsStationConfigurationService.GetRouterConfigMessageAsync(stationEui, cancellationToken);
                     await socket.SendAsync(routerConfigResponse, cancellationToken);
                     break;
@@ -119,7 +119,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                     LogReceivedMessage(logger, "jreq", json, null);
                     try
                     {
-                        var jreq = LnsData.JoinRequestFrameReader.Read(json);
+                        var jreq = JsonConvert.DeserializeObject< JoinRequestMessage>(json);
 
                         var routerRegion = await basicsStationConfigurationService.GetRegionAsync(stationEui, cancellationToken);
 
@@ -133,7 +133,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                         messageDispatcher.DispatchRequest(loraRequest);
 
                     }
-                    catch (JsonException)
+                    catch (Newtonsoft.Json.JsonException)
                     {
                         logger.LogInformation("Received unexpected 'jreq' message: {Json}.", json);
                     }
@@ -142,7 +142,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                     LogReceivedMessage(logger, "updf", json, null);
                     try
                     {
-                        var updf = LnsData.UpstreamDataFrameReader.Read(json);
+                        var updf = JsonConvert.DeserializeObject<UpstreamDataMessage>(json);
 
                         using var scope = logger.BeginDeviceAddressScope(updf.DevAddr);
                         this.uplinkMessageCounter?.Add(1);
@@ -163,7 +163,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                         loraRequest.SetStationEui(stationEui);
                         messageDispatcher.DispatchRequest(loraRequest);
                     }
-                    catch (JsonException)
+                    catch (Newtonsoft.Json.JsonException)
                     {
                         logger.LogError("Received unexpected 'updf' message: {Json}.", json);
                     }
@@ -174,10 +174,10 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                 case var messageType and (LnsMessageType.DownlinkMessage or LnsMessageType.RouterConfig):
                     throw new NotSupportedException($"'{messageType}' is not a valid message type for this endpoint and is only valid for 'downstream' messages.");
                 case LnsMessageType.TimeSync:
-                    var timeSyncData = JsonSerializer.Deserialize<TimeSyncMessage>(json);
+                    var timeSyncData = JsonConvert.DeserializeObject<TimeSyncMessage>(json);
                     LogReceivedMessage(logger, "TimeSync", json, null);
                     timeSyncData.GpsTime = (ulong)DateTime.UtcNow.Subtract(GpsEpoch).TotalMilliseconds * 1000; // to microseconds
-                    await socket.SendAsync(JsonSerializer.Serialize(timeSyncData), cancellationToken);
+                    await socket.SendAsync(JsonConvert.SerializeObject(timeSyncData), cancellationToken);
                     break;
                 case var messageType and (LnsMessageType.ProprietaryDataFrame
                                           or LnsMessageType.MulticastSchedule

@@ -12,11 +12,11 @@ namespace LoRaTools.NetworkServerDiscovery
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Jacob;
     using LoRaTools;
     using LoRaWan;
     using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.Logging;
+    using Newtonsoft.Json;
 
     public sealed partial class DiscoveryService
     {
@@ -24,15 +24,15 @@ namespace LoRaTools.NetworkServerDiscovery
         private readonly ILnsDiscovery lnsDiscovery;
         private readonly ILogger<DiscoveryService> logger;
 
-        internal static readonly IJsonReader<StationEui> QueryReader =
-            JsonReader.Object(
-                JsonReader.Property("router",
-                    JsonReader.Either(from n in JsonReader.UInt64()
-                                      select new StationEui(n),
-                                      from s in JsonReader.String()
-                                      select s.Contains(':', StringComparison.Ordinal)
-                                           ? Id6.TryParse(s, out var id6) ? new StationEui(id6) : throw new JsonException()
-                                           : Hexadecimal.TryParse(s, out ulong hhd, '-') ? new StationEui(hhd) : throw new JsonException())));
+        //internal static readonly IJsonReader<StationEui> QueryReader =
+        //    JsonReader.Object(
+        //        JsonReader.Property("router",
+        //            JsonReader.Either(from n in JsonReader.UInt64()
+        //                              select new StationEui(n),
+        //                              from s in JsonReader.String()
+        //                              select s.Contains(':', StringComparison.Ordinal)
+        //                                   ? Id6.TryParse(s, out var id6) ? new StationEui(id6) : throw new JsonException()
+        //                                   : Hexadecimal.TryParse(s, out ulong hhd, '-') ? new StationEui(hhd) : throw new JsonException())));
 
         public DiscoveryService(ILnsDiscovery lnsDiscovery, ILogger<DiscoveryService> logger)
         {
@@ -55,7 +55,7 @@ namespace LoRaTools.NetworkServerDiscovery
                 else
                 {
                     var json = message.Current;
-                    var stationEui = QueryReader.Read(json);
+                    var stationEui = JsonConvert.DeserializeObject<StationEui>(json);
 
                     using var scope = this.logger.BeginEuiScope(stationEui);
                     this.logger.LogInformation("Received discovery request from: {StationEui}", stationEui);

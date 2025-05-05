@@ -3,18 +3,18 @@
 
 namespace LoRaWan.NetworkServer.BasicsStation.JsonHandlers
 {
-    using System.Text.Json.Serialization;
-    using LoRaWan.NetworkServer.BasicsStation;
+    using System.Runtime.Serialization;
 
-    internal class TimeSyncMessage
+    [DataContract]
+    public class TimeSyncMessage
     {
-        [JsonPropertyName("txtime")]
+        [DataMember(Name = "txtime")]
         public ulong TxTime { get; set; }
 
-        [JsonPropertyName("gpstime")]
+        [DataMember(Name = "gpstime")]
         public ulong GpsTime { get; set; }
 
-        [JsonPropertyName("msgtype")]
+        [DataMember(Name = "msgtype")]
         public string MsgType { get; set; }
     }
 }

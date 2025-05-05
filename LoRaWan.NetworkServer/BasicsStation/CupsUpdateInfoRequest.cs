@@ -7,32 +7,30 @@ namespace LoRaWan.NetworkServer.BasicsStation
 {
     using System;
     using System.Collections.Immutable;
+    using System.Runtime.Serialization;
 
-    internal sealed record CupsUpdateInfoRequest
+    [DataContract]
+    public class CupsUpdateInfoRequest
     {
-        public CupsUpdateInfoRequest(StationEui stationEui,
-                                     Uri? cupsUri,
-                                     Uri? tcUri,
-                                     uint cupsCredentialsChecksum,
-                                     uint tcCredentialsChecksum,
-                                     string package,
-                                     ImmutableArray<uint> keyChecksums)
-        {
-            StationEui = stationEui;
-            CupsUri = cupsUri;
-            TcUri = tcUri;
-            CupsCredentialsChecksum = cupsCredentialsChecksum;
-            TcCredentialsChecksum = tcCredentialsChecksum;
-            Package = package;
-            KeyChecksums = keyChecksums;
-        }
-
+        [DataMember(Name = "router")]
         public StationEui StationEui { get; }
+
+        [DataMember(Name = "cupsUri")]
         public Uri? CupsUri { get; }
+
+        [DataMember(Name = "tcUri")]
         public Uri? TcUri { get; }
+
+        [DataMember(Name = "cupsCredCrc")]
         public uint CupsCredentialsChecksum { get; }
+
+        [DataMember(Name = "tcCredCrc")]
         public uint TcCredentialsChecksum { get; }
-        public string Package { get; }
+
+        [DataMember(Name = "package")]
+        public string? Package { get; }
+
+        [DataMember(Name = "keys")]
         public ImmutableArray<uint> KeyChecksums { get; }
     }
 }

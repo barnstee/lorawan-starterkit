@@ -11,6 +11,7 @@ namespace LoRaWan.NetworkServer
     using LoRaWan;
     using LoRaWan.NetworkServer.BasicsStation;
     using Microsoft.Extensions.Logging;
+    using static LoRaWan.NetworkServer.BasicsStation.JsonHandlers.LnsData;
 
     /// <summary>
     /// Composition of a <see cref="LoRaRequest"/> that logs at the end of the process.

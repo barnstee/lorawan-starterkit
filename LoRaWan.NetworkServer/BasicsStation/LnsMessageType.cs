@@ -5,7 +5,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
 {
     using System;
 
-    internal enum LnsMessageType
+    public enum LnsMessageType
     {
         Version,                // version
         RouterConfig,           // router_config
@@ -22,9 +22,9 @@ namespace LoRaWan.NetworkServer.BasicsStation
         RemoteShell             // rmtsh
     }
 
-    internal static class LnsMessageTypeExtensions
+    public static class LnsMessageTypeExtensions
     {
-        internal static string ToBasicStationString(this LnsMessageType lnsMessageType) => lnsMessageType switch
+        public static string ToBasicStationString(this LnsMessageType lnsMessageType) => lnsMessageType switch
         {
             LnsMessageType.Version => "version",
             LnsMessageType.RouterConfig => "router_config",

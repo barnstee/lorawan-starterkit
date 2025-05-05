@@ -216,7 +216,7 @@ namespace LoRaWan.NetworkServer
             return new Uri(baseUrl, queryParameterSb.ToString());
         }
 
-        public override async Task<string> FetchStationCredentialsAsync(StationEui eui, ConcentratorCredentialType credentialtype, CancellationToken token)
+        public override async Task<string> FetchStationCredentialsAsync(StationEui? eui, ConcentratorCredentialType credentialtype, CancellationToken token)
         {
             using var client = CreateClient();
             var url = BuildUri("FetchConcentratorCredentials", new Dictionary<string, string>
@@ -240,7 +240,7 @@ namespace LoRaWan.NetworkServer
             return await response.Content.ReadAsStringAsync(token);
         }
 
-        public override async Task<HttpContent> FetchStationFirmwareAsync(StationEui eui, CancellationToken token)
+        public override async Task<HttpContent> FetchStationFirmwareAsync(StationEui? eui, CancellationToken token)
         {
             using var client = CreateClient();
             var url = BuildUri("FetchConcentratorFirmware", new Dictionary<string, string>
