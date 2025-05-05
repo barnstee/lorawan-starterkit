@@ -9,7 +9,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
-    using LoRaWan.NetworkServer.BasicsStation.ModuleConnection;
     using Microsoft.AspNetCore;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -31,9 +30,9 @@ namespace LoRaWan.NetworkServer.BasicsStation
 
             var shouldUseCertificate = !string.IsNullOrEmpty(configuration.LnsServerPfxPath);
             using var webHost = WebHost.CreateDefaultBuilder()
-                                       .UseUrls(shouldUseCertificate ? new[] { FormattableString.Invariant($"https://0.0.0.0:{LnsSecurePort}"),
-                                                                               FormattableString.Invariant($"https://0.0.0.0:{CupsPort}") }
-                                                                     : new[] { FormattableString.Invariant($"http://0.0.0.0:{LnsPort}") })
+                                       .UseUrls(shouldUseCertificate ? [ FormattableString.Invariant($"https://0.0.0.0:{LnsSecurePort}"),
+                                                                               FormattableString.Invariant($"https://0.0.0.0:{CupsPort}") ]
+                                                                     : [FormattableString.Invariant($"http://0.0.0.0:{LnsPort}")])
                                        .UseStartup<BasicsStationNetworkServerStartup>()
                                        .UseKestrel(config =>
                                        {
@@ -48,14 +47,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
 
             try
             {
-                // We want to make sure the module connection is started at the start of the Network server.
-                // This is needed when we run as module, therefore we are blocking.
-                if (configuration.RunningAsIoTEdgeModule)
-                {
-                    var moduleConnection = webHost.Services.GetRequiredService<ModuleConnectionHost>();
-                    await moduleConnection.CreateAsync(cancellationToken);
-                }
-
                 await webHost.RunAsync(cancellationToken);
             }
             finally

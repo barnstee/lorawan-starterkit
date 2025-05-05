@@ -4,7 +4,6 @@
 namespace LoRaTools
 {
     using System;
-    using Microsoft.Azure.Devices.Shared;
 
     public interface ITwinProperties
     {
@@ -15,8 +14,6 @@ namespace LoRaTools
         bool ContainsKey(string propertyName);
 
         DateTime GetLastUpdated();
-
-        Metadata GetMetadata();
 
         bool TryGetValue(string propertyName, out object item);
     }

@@ -141,7 +141,7 @@ namespace LoRaTools.Regions
             var channel1Offset = frequencyChannel1 - Channel1Frequency;
             if (channel1Offset != FrequencyOffset)
             {
-                throw new ConfigurationErrorsException($"Provided channel frequencies {frequencyChannel0}, {frequencyChannel1} for Region {LoRaRegion} are inconsistent.");
+                throw new ArgumentException($"Provided channel frequencies {frequencyChannel0}, {frequencyChannel1} for Region {LoRaRegion} are inconsistent.");
             }
 
             return this;

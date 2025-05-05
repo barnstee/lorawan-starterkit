@@ -39,14 +39,13 @@ namespace LoRaWan.NetworkServer
         internal int CreatedDevicesCount { get; private set; }
 
         private readonly LoRaDeviceAPIServiceBase loRaDeviceAPIService;
-        private readonly ILoRaDeviceFactory deviceFactory;
         private readonly NetworkServerConfiguration configuration;
         private readonly DevAddr devAddr;
         private readonly LoRaDeviceCache loraDeviceCache;
         private readonly HashSet<ILoRaDeviceInitializer> initializers;
         private readonly ILogger<DeviceLoaderSynchronizer> logger;
         private volatile LoaderState state;
-        private readonly object queueLock;
+        private readonly Lock queueLock;
         private volatile List<LoRaRequest> queuedRequests;
 
         protected virtual bool LoadingDevicesFailed { get; set; }
@@ -54,21 +53,19 @@ namespace LoRaWan.NetworkServer
         internal DeviceLoaderSynchronizer(
             DevAddr devAddr,
             LoRaDeviceAPIServiceBase loRaDeviceAPIService,
-            ILoRaDeviceFactory deviceFactory,
             NetworkServerConfiguration configuration,
             LoRaDeviceCache deviceCache,
             HashSet<ILoRaDeviceInitializer> initializers,
             ILogger<DeviceLoaderSynchronizer> logger)
         {
             this.loRaDeviceAPIService = loRaDeviceAPIService;
-            this.deviceFactory = deviceFactory;
             this.configuration = configuration;
             this.devAddr = devAddr;
             this.loraDeviceCache = deviceCache;
             this.initializers = initializers;
             this.logger = logger;
             this.state = LoaderState.QueryingDevices;
-            this.queueLock = new object();
+            this.queueLock = new Lock();
             this.queuedRequests = new List<LoRaRequest>();
         }
 
@@ -130,10 +127,11 @@ namespace LoRaWan.NetworkServer
                 foreach (var foundDevice in devices)
                 {
                     using var scope = this.logger.BeginDeviceScope(foundDevice.DevEUI);
+
                     // Only create devices that does not exist in the cache
                     if (!this.loraDeviceCache.TryGetByDevEui(foundDevice.DevEUI, out var cachedDevice))
                     {
-                        initTasks.Add(this.deviceFactory.CreateAndRegisterAsync(foundDevice, CancellationToken.None));
+
                     }
                     else
                     {
@@ -142,7 +140,7 @@ namespace LoRaWan.NetworkServer
                             // device in cache from a previous join that we didn't complete
                             // (lost race with another gw) - refresh the twins now and keep it
                             // in the cache
-                            refreshTasks ??= new List<Task>();
+                            refreshTasks ??= [];
                             refreshTasks.Add(RefreshDeviceAsync(cachedDevice));
                             this.logger.LogDebug("refreshing device to fetch DevAddr");
                         }
@@ -159,21 +157,23 @@ namespace LoRaWan.NetworkServer
                                 this.logger.LogDebug("stale connection owner, releasing the connection.");
                                 cachedDevice.IsConnectionOwner = false;
                             }
-                            await cachedDevice.CloseConnectionAsync(CancellationToken.None);
+                            cachedDevice.CloseConnection(CancellationToken.None);
                         }
                     }
                 }
 
-                async Task RefreshDeviceAsync(LoRaDevice device)
+                Task RefreshDeviceAsync(LoRaDevice device)
                 {
                     try
                     {
-                        _ = await device.InitializeAsync(this.configuration, CancellationToken.None);
+                        _ = device.Initialize(this.configuration, CancellationToken.None);
                     }
                     finally
                     {
-                        await device.CloseConnectionAsync(CancellationToken.None);
+                        device.CloseConnection(CancellationToken.None);
                     }
+
+                    return Task.CompletedTask;
                 }
 
                 try
@@ -209,13 +209,13 @@ namespace LoRaWan.NetworkServer
 #pragma warning restore CA1031 // Do not catch general exception types
                             {
 #pragma warning disable CA1508 // Avoid dead conditional code (false positive)
-                                deviceInitExceptionList ??= new List<Exception>();
+                                deviceInitExceptionList ??= [];
 #pragma warning restore CA1508 // Avoid dead conditional code
                                 deviceInitExceptionList.Add(ex);
                             }
                             finally
                             {
-                                await device.CloseConnectionAsync(CancellationToken.None);
+                                device.CloseConnection(CancellationToken.None);
                             }
                         }
                     }
@@ -238,7 +238,7 @@ namespace LoRaWan.NetworkServer
             lock (this.queueLock)
             {
                 failedRequests = this.queuedRequests;
-                this.queuedRequests = new List<LoRaRequest>();
+                this.queuedRequests = [];
                 LoadingDevicesFailed = true;
             }
 

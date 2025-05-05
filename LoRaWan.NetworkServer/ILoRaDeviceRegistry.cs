@@ -3,10 +3,9 @@
 
 namespace LoRaWan.NetworkServer
 {
-    using System;
     using System.Threading.Tasks;
 
-    public interface ILoRaDeviceRegistry : IAsyncDisposable
+    public interface ILoRaDeviceRegistry
     {
         /// <summary>
         /// Gets devices that matches an OTAA join request.

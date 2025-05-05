@@ -16,7 +16,7 @@ namespace LoRaWan.NetworkServer
     using System.Threading;
     using System.Threading.Tasks;
 
-    public class LoRaDeviceCache : IAsyncDisposable
+    public class LoRaDeviceCache : IDisposable
     {
         private readonly LoRaDeviceCacheOptions options;
         private readonly ConcurrentDictionary<DevAddr, ConcurrentDictionary<DevEui, LoRaDevice>> devAddrCache = new();
@@ -24,9 +24,7 @@ namespace LoRaWan.NetworkServer
         private readonly Lock syncLock = new Lock();
         private readonly NetworkServerConfiguration configuration;
         private readonly ILogger<LoRaDeviceCache> logger;
-#pragma warning disable CA2213 // Disposable fields should be disposed (false positive)
         private CancellationTokenSource? ctsDispose;
-#pragma warning restore CA2213 // Disposable fields should be disposed
         private readonly StatisticsTracker statisticsTracker = new StatisticsTracker();
         private readonly Counter<int>? deviceCacheHits;
 
@@ -113,10 +111,10 @@ namespace LoRaWan.NetworkServer
         {
             _ = device ?? throw new ArgumentNullException(nameof(device));
             await using (device.BeginDeviceClientConnectionActivity())
-                _ = await device.InitializeAsync(this.configuration, cancellationToken);
+                _ = device.Initialize(this.configuration, cancellationToken);
         }
 
-        public virtual async Task<bool> RemoveAsync(LoRaDevice device)
+        public virtual Task<bool> RemoveAsync(LoRaDevice device)
         {
             _ = device ?? throw new ArgumentNullException(nameof(device));
 
@@ -137,9 +135,9 @@ namespace LoRaWan.NetworkServer
                 }
             }
 
-            await device.DisposeAsync();
+            device.Dispose();
 
-            return result;
+            return Task.FromResult(result);
         }
 
         public void CleanupOldDevAddrForDevice(LoRaDevice device, DevAddr oldDevAddr)
@@ -272,7 +270,7 @@ namespace LoRaWan.NetworkServer
             }
         }
 
-        private async Task CleanupAllDevicesAsync()
+        private Task CleanupAllDevicesAsync()
         {
             var devices = this.euiCache.Values;
 
@@ -284,7 +282,7 @@ namespace LoRaWan.NetworkServer
 
             this.logger.LogInformation($"{nameof(LoRaDeviceCache)} cleared.");
 
-            await devices.DisposeAllAsync(20);
+            return Task.CompletedTask;
         }
 
         private class StatisticsTracker
@@ -299,25 +297,19 @@ namespace LoRaWan.NetworkServer
             internal void IncrementMiss() => Interlocked.Increment(ref miss);
         }
 
-        public async ValueTask DisposeAsync()
+        void IDisposable.Dispose()
         {
-            await DisposeAsync(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual async ValueTask DisposeAsync(bool dispose)
-        {
-            if (dispose)
+            lock (this.syncLock)
             {
-                lock (this.syncLock)
-                {
-                    this.ctsDispose?.Cancel();
-                    this.ctsDispose?.Dispose();
-                    this.ctsDispose = null;
-                }
-
-                await CleanupAllDevicesAsync();
+                this.ctsDispose?.Cancel();
+                this.ctsDispose?.Dispose();
+                this.ctsDispose = null;
             }
+
+            CleanupAllDevicesAsync().GetAwaiter().GetResult();
+
+            // Suppress finalization to prevent derived types with finalizers from needing to re-implement IDisposable.
+            GC.SuppressFinalize(this);
         }
     }
 

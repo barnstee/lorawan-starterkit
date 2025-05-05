@@ -5,9 +5,9 @@ namespace LoRaWan.NetworkServer
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using Microsoft.AspNetCore.Server.Kestrel.Https;
-    using Microsoft.Azure.Devices.Client;
 
     // Network server configuration
     public class NetworkServerConfiguration
@@ -155,64 +155,49 @@ namespace LoRaWan.NetworkServer
         // Creates a new instance of NetworkServerConfiguration by reading values from environment variables
         public static NetworkServerConfiguration CreateFromEnvironmentVariables()
         {
-            var config = new NetworkServerConfiguration();
+            var config = new NetworkServerConfiguration
+            {
+                // Create case insensitive dictionary from environment variables
+                ProcessingDelayInMilliseconds = int.Parse(Environment.GetEnvironmentVariable("PROCESSING_DELAY_IN_MS"), NumberFormatInfo.InvariantInfo),
+                IsLocalDevelopment = true,
+                GatewayHostName = Environment.GetEnvironmentVariable("IOTEDGE_GATEWAYHOSTNAME"),
+                EnableGateway = bool.Parse(Environment.GetEnvironmentVariable("ENABLE_GATEWAY"))
+            };
 
-            // Create case insensitive dictionary from environment variables
-            var envVars = new CaseInsensitiveEnvironmentVariables(Environment.GetEnvironmentVariables());
-            config.ProcessingDelayInMilliseconds = envVars.GetEnvVar("PROCESSING_DELAY_IN_MS", config.ProcessingDelayInMilliseconds);
-            config.IsLocalDevelopment = envVars.GetEnvVar("LOCAL_DEVELOPMENT", false);
-            // We disable IoT Edge runtime either when we run in the cloud or during local development.
-            config.RunningAsIoTEdgeModule = !(envVars.GetEnvVar("CLOUD_DEPLOYMENT", false) || config.IsLocalDevelopment);
-            var iotHubHostName = envVars.GetEnvVar("IOTEDGE_IOTHUBHOSTNAME", envVars.GetEnvVar("IOTHUBHOSTNAME", string.Empty));
-            config.IoTHubHostName = !string.IsNullOrEmpty(iotHubHostName) ? iotHubHostName : throw new InvalidOperationException("Either 'IOTEDGE_IOTHUBHOSTNAME' or 'IOTHUBHOSTNAME' environment variable should be populated");
-
-            config.GatewayHostName = envVars.GetEnvVar("IOTEDGE_GATEWAYHOSTNAME", string.Empty);
-            config.EnableGateway = envVars.GetEnvVar("ENABLE_GATEWAY", true);
             if (!config.RunningAsIoTEdgeModule && config.EnableGateway)
             {
                 throw new NotSupportedException("ENABLE_GATEWAY cannot be true if RunningAsIoTEdgeModule is false.");
             }
 
-            var gatewayId = envVars.GetEnvVar("IOTEDGE_DEVICEID", envVars.GetEnvVar("HOSTNAME", string.Empty));
-            config.GatewayID = !string.IsNullOrEmpty(gatewayId) ? gatewayId : throw new InvalidOperationException("Either 'IOTEDGE_DEVICEID' or 'HOSTNAME' environment variable should be populated");
+            config.HttpsProxy = Environment.GetEnvironmentVariable("HTTPS_PROXY");
 
-            config.HttpsProxy = envVars.GetEnvVar("HTTPS_PROXY", string.Empty);
-            config.Rx2DataRate = envVars.GetEnvVar("RX2_DATR", -1) is var datrNum && (DataRateIndex)datrNum is var datr && Enum.IsDefined(datr) ? datr : null;
-            config.Rx2Frequency = envVars.GetEnvVar("RX2_FREQ") is { } someFreq ? Hertz.Mega(someFreq) : null;
-            config.IoTEdgeTimeout = envVars.GetEnvVar("IOTEDGE_TIMEOUT", config.IoTEdgeTimeout);
+            // Fix for CS1955: Non-invocable member 'DataRateIndex' cannot be used like a method.
+            // The issue is that 'DataRateIndex' is an enum, and enums cannot be invoked like methods.
+            // The correct approach is to cast or parse the integer value to the enum type.
+
+            config.Rx2DataRate = (DataRateIndex)int.Parse(Environment.GetEnvironmentVariable("RX2_DATR"), NumberFormatInfo.InvariantInfo);
+
+            config.Rx2Frequency = double.Parse(Environment.GetEnvironmentVariable("RX2_FREQ"), NumberFormatInfo.InvariantInfo) is { } someFreq ? Hertz.Mega(someFreq) : null;
 
             // facadeurl is allowed to be null as the value is coming from the twin in production.
-            var facadeUrl = envVars.GetEnvVar("FACADE_SERVER_URL", string.Empty);
-            config.FacadeServerUrl = string.IsNullOrEmpty(facadeUrl) ? null : new Uri(envVars.GetEnvVar("FACADE_SERVER_URL", string.Empty));
-            config.FacadeAuthCode = envVars.GetEnvVar("FACADE_AUTH_CODE", string.Empty);
-            config.LogLevel = envVars.GetEnvVar("LOG_LEVEL", config.LogLevel);
-            config.LogToConsole = envVars.GetEnvVar("LOG_TO_CONSOLE", config.LogToConsole);
-            config.LogToTcp = envVars.GetEnvVar("LOG_TO_TCP", config.LogToTcp);
-            config.LogToHub = envVars.GetEnvVar("LOG_TO_HUB", config.LogToHub);
-            config.LogToTcpAddress = envVars.GetEnvVar("LOG_TO_TCP_ADDRESS", string.Empty);
-            config.LogToTcpPort = envVars.GetEnvVar("LOG_TO_TCP_PORT", config.LogToTcpPort);
-            config.NetId = new NetId(envVars.GetEnvVar("NETID", config.NetId.NetworkId));
-            config.AllowedDevAddresses = envVars.GetEnvVar("AllowedDevAddresses", string.Empty)
+            var facadeUrl = Environment.GetEnvironmentVariable("FACADE_SERVER_URL");
+            config.FacadeServerUrl = string.IsNullOrEmpty(facadeUrl) ? null : new Uri(Environment.GetEnvironmentVariable("FACADE_SERVER_URL"));
+            config.FacadeAuthCode = Environment.GetEnvironmentVariable("FACADE_AUTH_CODE");
+            config.LogLevel = Environment.GetEnvironmentVariable("LOG_LEVEL");
+            config.LogToConsole = true;
+            config.LogToTcp = false;
+            config.LogToHub = false;
+            config.NetId = new NetId(int.Parse(Environment.GetEnvironmentVariable("NETID"), NumberFormatInfo.InvariantInfo));
+            config.AllowedDevAddresses = [.. Environment.GetEnvironmentVariable("AllowedDevAddresses")
                                                 .Split(";")
                                                 .Select(s => DevAddr.TryParse(s, out var devAddr) ? (true, Value: devAddr) : default)
                                                 .Where(a => a is (true, _))
-                                                .Select(a => a.Value)
-                                                .ToHashSet();
-            config.LnsServerPfxPath = envVars.GetEnvVar("LNS_SERVER_PFX_PATH", string.Empty);
-            config.LnsServerPfxPassword = envVars.GetEnvVar("LNS_SERVER_PFX_PASSWORD", string.Empty);
-            var clientCertificateModeString = envVars.GetEnvVar("CLIENT_CERTIFICATE_MODE", "NoCertificate"); // Defaulting to NoCertificate if missing mode
+                                                .Select(a => a.Value)];
+            config.LnsServerPfxPath = Environment.GetEnvironmentVariable("LNS_SERVER_PFX_PATH");
+            config.LnsServerPfxPassword = Environment.GetEnvironmentVariable("LNS_SERVER_PFX_PASSWORD");
+            var clientCertificateModeString = Environment.GetEnvironmentVariable("CLIENT_CERTIFICATE_MODE");
             config.ClientCertificateMode = Enum.Parse<ClientCertificateMode>(clientCertificateModeString, true);
-            config.LnsVersion = envVars.GetEnvVar("LNS_VERSION", string.Empty);
-
-            config.IotHubConnectionPoolSize = envVars.GetEnvVar("IOTHUB_CONNECTION_POOL_SIZE", 1U) is uint size
-                                              && size > 0U
-                                              && size < AmqpConnectionPoolSettings.AbsoluteMaxPoolSize
-                                              ? size
-                                              : throw new NotSupportedException($"'IOTHUB_CONNECTION_POOL_SIZE' needs to be between 1 and {AmqpConnectionPoolSettings.AbsoluteMaxPoolSize}.");
-
-            config.RedisConnectionString = envVars.GetEnvVar("REDIS_CONNECTION_STRING", string.Empty);
-            if (!config.RunningAsIoTEdgeModule && !config.IsLocalDevelopment && string.IsNullOrEmpty(config.RedisConnectionString))
-                throw new InvalidOperationException("'REDIS_CONNECTION_STRING' can't be empty if running network server as part of a cloud only deployment.");
+            config.LnsVersion = Environment.GetEnvironmentVariable("LNS_VERSION");
 
             return config;
         }

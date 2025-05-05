@@ -5,7 +5,6 @@ namespace LoRaWan.NetworkServer
 {
     using System;
     using System.Diagnostics.Metrics;
-    using System.Threading.Tasks;
     using LoRaTools;
     using LoRaTools.LoRaMessage;
     using Microsoft.Extensions.Logging;
@@ -13,7 +12,7 @@ namespace LoRaWan.NetworkServer
     /// <summary>
     /// Message dispatcher.
     /// </summary>
-    public sealed class MessageDispatcher : IAsyncDisposable, IMessageDispatcher
+    public sealed class MessageDispatcher : IMessageDispatcher
     {
         private readonly NetworkServerConfiguration configuration;
         private readonly ILoRaDeviceRegistry deviceRegistry;
@@ -112,7 +111,5 @@ namespace LoRaWan.NetworkServer
 
             return false;
         }
-
-        public ValueTask DisposeAsync() => this.deviceRegistry.DisposeAsync();
     }
 }

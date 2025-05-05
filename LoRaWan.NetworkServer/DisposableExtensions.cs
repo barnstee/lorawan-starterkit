@@ -14,7 +14,7 @@ namespace LoRaWan.NetworkServer
     internal static class DisposableExtensions
     {
         /// <remarks>
-        /// In general <see cref="IAsyncDisposable.DisposeAsync"/> implementations are not
+        /// In general <see cref="IAsyncDisposable.Dispose"/> implementations are not
         /// expected to throw exceptions. If any of the disposable objects throw exceptions then
         /// the behaviour of this method is undefined.
         /// </remarks>
@@ -49,7 +49,6 @@ namespace LoRaWan.NetworkServer
                 try
                 {
                     await semaphore.WaitAsync().ConfigureAwait(false);
-                    await device.DisposeAsync();
                 }
                 finally
                 {

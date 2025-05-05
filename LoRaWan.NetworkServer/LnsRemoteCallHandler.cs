@@ -113,7 +113,7 @@ namespace LoRaWan.NetworkServer
             }
 
             loRaDevice.IsConnectionOwner = false;
-            await loRaDevice.CloseConnectionAsync(cancellationToken, force: true);
+            loRaDevice.CloseConnection(cancellationToken, force: true);
 
             this.logger.LogInformation(ClosedConnectionLog + "from gateway with id '{GatewayId}', message id '{MessageId}'", this.networkServerConfiguration.GatewayID, c2d.MessageId);
             this.forceClosedConnections.Add(1);

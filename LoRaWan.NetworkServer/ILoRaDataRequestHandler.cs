@@ -11,6 +11,7 @@ namespace LoRaWan.NetworkServer
     public interface ILoRaDataRequestHandler
     {
         Task<LoRaDeviceRequestProcessResult> ProcessRequestAsync(LoRaRequest request, LoRaDevice loRaDevice);
+
         void SetClassCMessageSender(IClassCDeviceMessageSender classCMessageSender);
     }
 }

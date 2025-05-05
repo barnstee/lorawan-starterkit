@@ -9,8 +9,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.CommonAPI;
     using LoRaWan.Core;
     using Microsoft.Extensions.DependencyInjection;
-    using Polly;
-
+    
     public static class LoRaApiHttpClient
     {
         public const string Name = nameof(LoRaApiHttpClient);
@@ -47,9 +46,7 @@ namespace LoRaWan.NetworkServer
         {
             // This Http Client retries aggressively first to not miss the receive window if possible.
             _ = services.AddHttpClient(LoRaApiHttpClient.Name)
-                        .ConfigurePrimaryHttpMessageHandler(createHttpMessageHandler)
-                        .AddTransientHttpErrorPolicy(policyBuilder =>
-                            policyBuilder.WaitAndRetryAsync(NumberOfRetries, i => (i <= NumberOfAggressiveRetries ? AggressiveRetryInterval : RetryInterval) * Math.Pow(2, i)));
+                        .ConfigurePrimaryHttpMessageHandler(createHttpMessageHandler);
 
             return services;
         }

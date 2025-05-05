@@ -12,15 +12,12 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using LoRaWan;
     using LoRaWan.NetworkServer;
     using LoRaWan.NetworkServer.ADR;
-    using LoRaWan.NetworkServer.BasicsStation.ModuleConnection;
     using LoRaWan.NetworkServer.BasicsStation.Processors;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Server.Kestrel.Https;
-    using Microsoft.Azure.Devices.Client;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
-    using StackExchange.Redis;
 
     internal sealed class BasicsStationNetworkServerStartup(IConfiguration configuration)
     {
@@ -29,9 +26,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
 
         public void ConfigureServices(IServiceCollection services)
         {
-            ITransportSettings[] settings = { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) };
-            var loraModuleFactory = new LoRaModuleClientFactory(settings);
-
             _ = services.AddLogging(loggingBuilder =>
                 {
                     _ = loggingBuilder.ClearProviders();
@@ -41,11 +35,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
 
                     _ = loggingBuilder.SetMinimumLevel(logLevel);
                     _ = loggingBuilder.AddLoRaConsoleLogger(c => c.LogLevel = logLevel);
-
-                    if (NetworkServerConfiguration.LogToHub)
-                        _ = loggingBuilder.AddIotHubLogger(c => c.LogLevel = logLevel);
-
-
                 })
                 .AddMemoryCache()
                 .AddHttpClient()
@@ -56,17 +45,14 @@ namespace LoRaWan.NetworkServer.BasicsStation
                 .AddSingleton<IDeduplicationStrategyFactory, DeduplicationStrategyFactory>()
                 .AddSingleton<ILoRaADRStrategyProvider, LoRaADRStrategyProvider>()
                 .AddSingleton<ILoRAADRManagerFactory, LoRAADRManagerFactory>()
-                .AddSingleton<ILoRaDeviceClientConnectionManager, LoRaDeviceClientConnectionManager>()
                 .AddSingleton<ILoRaPayloadDecoder, LoRaPayloadDecoder>()
                 .AddSingleton<IFunctionBundlerProvider, FunctionBundlerProvider>()
                 .AddSingleton<ILoRaDataRequestHandler, DefaultLoRaDataRequestHandler>()
-                .AddSingleton<ILoRaDeviceFactory, LoRaDeviceFactory>()
                 .AddSingleton<ILoRaDeviceRegistry, LoRaDeviceRegistry>()
                 .AddSingleton<IJoinRequestMessageHandler, JoinRequestMessageHandler>()
                 .AddSingleton<IMessageDispatcher, MessageDispatcher>()
                 .AddSingleton<IBasicsStationConfigurationService, BasicsStationConfigurationService>()
                 .AddSingleton<IClassCDeviceMessageSender, DefaultClassCDevicesMessageSender>()
-                .AddSingleton<ILoRaModuleClientFactory>(loraModuleFactory)
                 .AddSingleton<LoRaDeviceAPIServiceBase, LoRaDeviceAPIService>()
                 .AddSingleton<WebSocketWriterRegistry<StationEui, string>>()
                 .AddSingleton<IDownstreamMessageSender, DownstreamMessageSender>()
@@ -81,13 +67,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
             if (NetworkServerConfiguration.ClientCertificateMode is not ClientCertificateMode.NoCertificate)
                 _ = services.AddSingleton<IClientCertificateValidatorService, ClientCertificateValidatorService>();
 
-            _ = NetworkServerConfiguration.RunningAsIoTEdgeModule || NetworkServerConfiguration.IsLocalDevelopment
-                ? services.AddSingleton<ModuleConnectionHost>()
-                : services.AddSingleton<ILnsRemoteCallHandler, LnsRemoteCallHandler>()
-                          .AddSingleton<ILnsRemoteCallListener>(sp =>
-                              new RedisRemoteCallListener(ConnectionMultiplexer.Connect(NetworkServerConfiguration.RedisConnectionString),
-                                                          sp.GetRequiredService<ILogger<RedisRemoteCallListener>>(),
-                                                          sp.GetRequiredService<Meter>()));
+            _ = services.AddSingleton<ILnsRemoteCallHandler, LnsRemoteCallHandler>();
         }
 
 #pragma warning disable CA1822 // Mark members as static

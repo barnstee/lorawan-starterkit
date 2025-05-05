@@ -119,9 +119,6 @@ namespace LoRaWan.NetworkServer
                     if (exception is { } someException)
                         this.logger.LogError(someException, "Processing of secondary tasks failed.");
                 }
-
-                if (processingState.DeviceConnectionActivity is { } someDeviceConnectionActivity)
-                    await someDeviceConnectionActivity.DisposeAsync();
             }
         }
 
@@ -149,8 +146,7 @@ namespace LoRaWan.NetworkServer
                 return new LoRaDeviceRequestProcessResult(loRaDevice, request, LoRaDeviceRequestFailedReason.ApplicationError);
             }
 
-            // Contains the Cloud to message we need to send
-            IReceivedLoRaCloudToDeviceMessage cloudToDeviceMessage = null;
+            ReceivedLoRaCloudToDeviceMessage cloudToDeviceMessage = null;
 
             var skipDownstreamToAvoidCollisions = false;
             var concentratorDeduplicationResult = this.concentratorDeduplication.CheckDuplicateData(request, loRaDevice);
@@ -236,7 +232,7 @@ namespace LoRaWan.NetworkServer
                         if (IsProcessingDelayEnabled())
                         {
                             loRaDevice.IsConnectionOwner = false;
-                            await loRaDevice.CloseConnectionAsync(CancellationToken.None);
+                            loRaDevice.CloseConnection(CancellationToken.None);
                         }
                         // duplication strategy is indicating that we do not need to continue processing this message
                         this.logger.LogDebug($"duplication strategy indicated to not process message: {payloadFcnt}");
@@ -504,7 +500,7 @@ namespace LoRaWan.NetworkServer
                     var timeAvailableToCheckCloudToDeviceMessages = timeWatcher.GetAvailableTimeToCheckCloudToDeviceMessage(loRaDevice);
                     if (timeAvailableToCheckCloudToDeviceMessages >= LoRaOperationTimeWatcher.MinimumAvailableTimeToCheckForCloudMessage)
                     {
-                        cloudToDeviceMessage = await ReceiveCloudToDeviceAsync(loRaDevice, timeAvailableToCheckCloudToDeviceMessages);
+                        cloudToDeviceMessage = null;
                         if (cloudToDeviceMessage != null && !ValidateCloudToDeviceMessage(loRaDevice, request, cloudToDeviceMessage))
                         {
                             // Reject cloud to device message based on result from ValidateCloudToDeviceMessage
@@ -529,23 +525,6 @@ namespace LoRaWan.NetworkServer
                                 else
                                 {
                                     requiresConfirmation = true;
-                                }
-                            }
-
-                            // Checking again if cloudToDeviceMessage is valid because the fcntDown resolution could have failed,
-                            // causing us to drop the message
-                            if (cloudToDeviceMessage != null)
-                            {
-                                var remainingTimeForFPendingCheck = timeWatcher.GetRemainingTimeToReceiveSecondWindow(loRaDevice) - (LoRaOperationTimeWatcher.CheckForCloudMessageCallEstimatedOverhead + LoRaOperationTimeWatcher.MinimumAvailableTimeToCheckForCloudMessage);
-                                if (remainingTimeForFPendingCheck >= LoRaOperationTimeWatcher.MinimumAvailableTimeToCheckForCloudMessage)
-                                {
-                                    var additionalMsg = await ReceiveCloudToDeviceAsync(loRaDevice, LoRaOperationTimeWatcher.MinimumAvailableTimeToCheckForCloudMessage);
-                                    if (additionalMsg != null)
-                                    {
-                                        fpending = true;
-                                        this.logger.LogInformation($"found cloud to device message, setting fpending flag, message id: {additionalMsg.MessageId ?? "undefined"}");
-                                        state.Track(additionalMsg.AbandonAsync());
-                                    }
                                 }
                             }
                         }
@@ -669,15 +648,7 @@ namespace LoRaWan.NetworkServer
 
         public void SetClassCMessageSender(IClassCDeviceMessageSender classCMessageSender) => this.classCDeviceMessageSender = classCMessageSender;
 
-        internal virtual async Task<IReceivedLoRaCloudToDeviceMessage> ReceiveCloudToDeviceAsync(LoRaDevice loRaDevice, TimeSpan timeAvailableToCheckCloudToDeviceMessages)
-        {
-            _ = loRaDevice ?? throw new ArgumentNullException(nameof(loRaDevice));
-
-            var actualMessage = await loRaDevice.ReceiveCloudToDeviceAsync(timeAvailableToCheckCloudToDeviceMessages);
-            return (actualMessage != null) ? new LoRaCloudToDeviceMessageWrapper(loRaDevice, actualMessage) : null;
-        }
-
-        private bool ValidateCloudToDeviceMessage(LoRaDevice loRaDevice, LoRaRequest request, IReceivedLoRaCloudToDeviceMessage cloudToDeviceMsg)
+        private bool ValidateCloudToDeviceMessage(LoRaDevice loRaDevice, LoRaRequest request, ReceivedLoRaCloudToDeviceMessage cloudToDeviceMsg)
         {
             if (!cloudToDeviceMsg.IsValid(out var errorMessage))
             {
@@ -740,7 +711,7 @@ namespace LoRaWan.NetworkServer
             return true;
         }
 
-        internal virtual async Task<bool> SendDeviceEventAsync(LoRaRequest request, LoRaDevice loRaDevice, LoRaOperationTimeWatcher timeWatcher, object decodedValue, bool isDuplicate, byte[] decryptedPayloadData)
+        internal virtual Task<bool> SendDeviceEventAsync(LoRaRequest request, LoRaDevice loRaDevice, LoRaOperationTimeWatcher timeWatcher, object decodedValue, bool isDuplicate, byte[] decryptedPayloadData)
         {
             _ = loRaDevice ?? throw new ArgumentNullException(nameof(loRaDevice));
             _ = timeWatcher ?? throw new ArgumentNullException(nameof(timeWatcher));
@@ -770,19 +741,7 @@ namespace LoRaWan.NetworkServer
 
             ProcessAndSendMacCommands(loRaPayloadData, ref eventProperties);
 
-            if (await loRaDevice.SendEventAsync(deviceTelemetry, eventProperties))
-            {
-                string payloadAsRaw = null;
-                if (deviceTelemetry.Data != null)
-                {
-                    payloadAsRaw = JsonConvert.SerializeObject(deviceTelemetry.Data, Formatting.None);
-                }
-
-                this.logger.LogInformation($"message '{payloadAsRaw}' sent to hub");
-                return true;
-            }
-
-            return false;
+            return Task.FromResult(false);
         }
 
         /// <summary>

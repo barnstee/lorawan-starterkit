@@ -11,6 +11,21 @@ namespace LoRaWan.NetworkServer
     using System.Threading;
     using System.Threading.Channels;
     using System.Threading.Tasks;
+    public static class CancellationTokenExtensions
+    {
+        /// <summary>
+        /// Creates a new CancellationToken that is linked to the provided token and will also be canceled after the specified timeout.
+        /// </summary>
+        public static CancellationToken LinkWithTimeout(this CancellationToken token, TimeSpan timeout)
+        {
+            if (timeout == Timeout.InfiniteTimeSpan)
+                return token;
+
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+            cts.CancelAfter(timeout);
+            return cts.Token;
+        }
+    }
 
     /// <summary>
     /// A <see cref="IWebSocketWriter{T}"/> implementation for text messages that uses a queue to
@@ -108,13 +123,17 @@ namespace LoRaWan.NetworkServer
         {
             if (!this.isSendQueueProcessorRunning.ReadDirty())
                 throw new InvalidOperationException();
-            using var linkedCancellationTokens = cancellationToken.LinkWithTimeout(this.sendTimeout);
+
+            var linkedCancellationTokens = cancellationToken.LinkWithTimeout(this.sendTimeout);
+
             cancellationToken = linkedCancellationTokens;
             var output = new Output(message, cancellationToken);
             await this.channel.Writer.WriteAsync(output, cancellationToken).ConfigureAwait(false);
+
             using var registration =
                 cancellationToken.Register(static output => _ = ((Output?)output)!.TaskCompletionSource.TrySetCanceled(),
                                            output, useSynchronizationContext: false);
+
             _ = await output.TaskCompletionSource.Task.ConfigureAwait(false);
         }
     }

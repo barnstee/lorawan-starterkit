@@ -15,49 +15,25 @@ namespace LoRaWan.NetworkServer
     /// <summary>
     /// LoRa device registry.
     /// </summary>
-    public sealed class LoRaDeviceRegistry : ILoRaDeviceRegistry
+    public sealed class LoRaDeviceRegistry(
+        NetworkServerConfiguration configuration,
+        IMemoryCache cache,
+        LoRaDeviceAPIServiceBase loRaDeviceAPIService,
+        LoRaDeviceCache deviceCache,
+        ILoggerFactory loggerFactory,
+        ILogger<LoRaDeviceRegistry> logger) : ILoRaDeviceRegistry
     {
         // Caches a device making join for 30 minutes
         private const int INTERVAL_TO_CACHE_DEVICE_IN_JOIN_PROCESS_IN_MINUTES = 30;
-
-        private readonly LoRaDeviceAPIServiceBase loRaDeviceAPIService;
-        private readonly ILoRaDeviceFactory deviceFactory;
-        private readonly ILoggerFactory loggerFactory;
-        private readonly ILogger<LoRaDeviceRegistry> logger;
-        private readonly HashSet<ILoRaDeviceInitializer> initializers;
-        private readonly NetworkServerConfiguration configuration;
-        private readonly object getOrCreateLoadingDevicesRequestQueueLock;
-        private readonly object getOrCreateJoinDeviceLoaderLock;
-        private readonly IMemoryCache cache;
-        private readonly LoRaDeviceCache deviceCache;
+        private readonly HashSet<ILoRaDeviceInitializer> initializers = [];
+        private readonly Lock getOrCreateLoadingDevicesRequestQueueLock = new Lock();
+        private readonly Lock getOrCreateJoinDeviceLoaderLock = new Lock();
 
         /// <summary>
         /// Gets or sets the interval in which devices will be loaded
         /// Only affect reload attempts for same DevAddr.
         /// </summary>
-        public TimeSpan DevAddrReloadInterval { get; set; }
-
-        public LoRaDeviceRegistry(
-            NetworkServerConfiguration configuration,
-            IMemoryCache cache,
-            LoRaDeviceAPIServiceBase loRaDeviceAPIService,
-            ILoRaDeviceFactory deviceFactory,
-            LoRaDeviceCache deviceCache,
-            ILoggerFactory loggerFactory,
-            ILogger<LoRaDeviceRegistry> logger)
-        {
-            this.configuration = configuration;
-            this.cache = cache;
-            this.loRaDeviceAPIService = loRaDeviceAPIService;
-            this.deviceFactory = deviceFactory;
-            this.loggerFactory = loggerFactory;
-            this.logger = logger;
-            this.initializers = new HashSet<ILoRaDeviceInitializer>();
-            DevAddrReloadInterval = TimeSpan.FromSeconds(30);
-            this.getOrCreateLoadingDevicesRequestQueueLock = new object();
-            this.getOrCreateJoinDeviceLoaderLock = new object();
-            this.deviceCache = deviceCache;
-        }
+        public TimeSpan DevAddrReloadInterval { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Constructor should be used for test code only.
@@ -65,8 +41,8 @@ namespace LoRaWan.NetworkServer
         internal LoRaDeviceRegistry(NetworkServerConfiguration configuration,
                                     IMemoryCache cache,
                                     LoRaDeviceAPIServiceBase loRaDeviceAPIService,
-                                    ILoRaDeviceFactory deviceFactory, LoRaDeviceCache deviceCache)
-            : this(configuration, cache, loRaDeviceAPIService, deviceFactory, deviceCache,
+                                    LoRaDeviceCache deviceCache)
+            : this(configuration, cache, loRaDeviceAPIService, deviceCache,
                    NullLoggerFactory.Instance, NullLogger<LoRaDeviceRegistry>.Instance)
         { }
 
@@ -81,7 +57,7 @@ namespace LoRaWan.NetworkServer
             // https://github.com/aspnet/Extensions/issues/708
             lock (this.getOrCreateLoadingDevicesRequestQueueLock)
             {
-                return this.cache.GetOrCreate(
+                return cache.GetOrCreate(
                     GetDevLoaderCacheKey(devAddr),
                     (ce) =>
                     {
@@ -90,12 +66,11 @@ namespace LoRaWan.NetworkServer
 
                         var loader = new DeviceLoaderSynchronizer(
                                                     devAddr,
-                                                    this.loRaDeviceAPIService,
-                                                    this.deviceFactory,
-                                                    this.configuration,
-                                                    this.deviceCache,
+                                                    loRaDeviceAPIService,
+                                                    configuration,
+                                                    deviceCache,
                                                     this.initializers,
-                                                    this.loggerFactory.CreateLogger<DeviceLoaderSynchronizer>());
+                                                    loggerFactory.CreateLogger<DeviceLoaderSynchronizer>());
 
                         _ = loader.LoadAsync().ContinueWith((t) =>
                         {
@@ -124,20 +99,20 @@ namespace LoRaWan.NetworkServer
 
             var devAddr = request.Payload.DevAddr;
 
-            if (this.cache.TryGetValue<DeviceLoaderSynchronizer>(GetDevLoaderCacheKey(devAddr), out var deviceLoader))
+            if (cache.TryGetValue<DeviceLoaderSynchronizer>(GetDevLoaderCacheKey(devAddr), out var deviceLoader))
             {
                 return deviceLoader;
             }
 
-            if (this.deviceCache.TryGetForPayload(request.Payload, out var cachedDevice))
+            if (deviceCache.TryGetForPayload(request.Payload, out var cachedDevice))
             {
-                this.logger.LogDebug("device in cache");
+                logger.LogDebug("device in cache");
                 if (cachedDevice.IsOurDevice)
                 {
                     return cachedDevice;
                 }
 
-                return new ExternalGatewayLoRaRequestQueue(cachedDevice, this.loggerFactory.CreateLogger<ExternalGatewayLoRaRequestQueue>());
+                return new ExternalGatewayLoRaRequestQueue(cachedDevice, loggerFactory.CreateLogger<ExternalGatewayLoRaRequestQueue>());
             }
 
             // not in cache, need to make a single search by dev addr
@@ -149,26 +124,24 @@ namespace LoRaWan.NetworkServer
         /// </summary>
         public async Task<LoRaDevice> GetDeviceByDevEUIAsync(DevEui devEUI)
         {
-            if (this.deviceCache.TryGetByDevEui(devEUI, out var cachedDevice))
+            if (deviceCache.TryGetByDevEui(devEUI, out var cachedDevice))
             {
                 return cachedDevice;
             }
 
-            var key = await this.loRaDeviceAPIService.GetPrimaryKeyByEuiAsync(devEUI);
+            var key = await loRaDeviceAPIService.GetPrimaryKeyByEuiAsync(devEUI);
             if (string.IsNullOrEmpty(key))
                 return null;
-
-            var loRaDevice = await this.deviceFactory.CreateAndRegisterAsync(new IoTHubDeviceInfo { DevEUI = devEUI, PrimaryKey = key }, CancellationToken.None);
 
             if (this.initializers != null)
             {
                 foreach (var initializers in this.initializers)
                 {
-                    initializers.Initialize(loRaDevice);
+
                 }
             }
 
-            return loRaDevice;
+            return null;
         }
 
         // Creates cache key for join device loader: "joinloader:{devEUI}"
@@ -176,7 +149,7 @@ namespace LoRaWan.NetworkServer
         internal static string GetDevLoaderCacheKey(DevAddr devAddr) => string.Concat("devaddrloader:", devAddr);
 
         // Removes join device loader from cache
-        private void RemoveJoinDeviceLoader(DevEui devEui) => this.cache.Remove(GetJoinDeviceLoaderCacheKey(devEui));
+        private void RemoveJoinDeviceLoader(DevEui devEui) => cache.Remove(GetJoinDeviceLoaderCacheKey(devEui));
 
         // Gets or adds a join device loader to the memory cache
         private JoinDeviceLoader GetOrCreateJoinDeviceLoader(IoTHubDeviceInfo ioTHubDeviceInfo)
@@ -185,10 +158,10 @@ namespace LoRaWan.NetworkServer
             // https://github.com/aspnet/Extensions/issues/708
             lock (this.getOrCreateJoinDeviceLoaderLock)
             {
-                return this.cache.GetOrCreate(GetJoinDeviceLoaderCacheKey(ioTHubDeviceInfo.DevEUI), (entry) =>
+                return cache.GetOrCreate(GetJoinDeviceLoaderCacheKey(ioTHubDeviceInfo.DevEUI), (entry) =>
                 {
                     entry.SlidingExpiration = TimeSpan.FromMinutes(INTERVAL_TO_CACHE_DEVICE_IN_JOIN_PROCESS_IN_MINUTES);
-                    return new JoinDeviceLoader(ioTHubDeviceInfo, this.deviceFactory, this.deviceCache, this.loggerFactory.CreateLogger<JoinDeviceLoader>());
+                    return new JoinDeviceLoader(ioTHubDeviceInfo, deviceCache, loggerFactory.CreateLogger<JoinDeviceLoader>());
                 });
             }
         }
@@ -198,10 +171,10 @@ namespace LoRaWan.NetworkServer
         /// </summary>
         public async Task<LoRaDevice> GetDeviceForJoinRequestAsync(DevEui devEUI, DevNonce devNonce)
         {
-            this.logger.LogDebug("querying the registry for OTAA device");
+            logger.LogDebug("querying the registry for OTAA device");
 
-            var searchDeviceResult = await this.loRaDeviceAPIService.SearchAndLockForJoinAsync(
-                gatewayID: this.configuration.GatewayID,
+            var searchDeviceResult = await loRaDeviceAPIService.SearchAndLockForJoinAsync(
+                gatewayID: configuration.GatewayID,
                 devEUI: devEUI,
                 devNonce: devNonce);
 
@@ -210,19 +183,19 @@ namespace LoRaWan.NetworkServer
                 // another gateway processed the join request. If we have it in the cache
                 // with existing session keys, we need to invalidate that entry, to ensure
                 // it gets re-fetched on the next message
-                if (this.deviceCache.TryGetByDevEui(devEUI, out var someDevice))
+                if (deviceCache.TryGetByDevEui(devEUI, out var someDevice))
                 {
-                    _ = await this.deviceCache.RemoveAsync(someDevice);
-                    this.logger.LogDebug("Device was removed from cache.");
+                    _ = await deviceCache.RemoveAsync(someDevice);
+                    logger.LogDebug("Device was removed from cache.");
                 }
 
-                this.logger.LogInformation("join refused: Join already processed by another gateway.");
+                logger.LogInformation("join refused: Join already processed by another gateway.");
                 return null;
             }
 
             if (searchDeviceResult?.Devices == null || searchDeviceResult.Devices.Count == 0)
             {
-                this.logger.LogInformation(searchDeviceResult.RefusedMessage ?? "join refused: no devices found matching join request");
+                logger.LogInformation(searchDeviceResult.RefusedMessage ?? "join refused: no devices found matching join request");
                 return null;
             }
 
@@ -257,7 +230,7 @@ namespace LoRaWan.NetworkServer
 
             // make sure the device is also added to the devAddr
             // cache after the DevAddr was generated.
-            this.deviceCache.Register(loRaDevice);
+            deviceCache.Register(loRaDevice);
 
             CleanupOldDevAddr(loRaDevice, oldDevAddr);
         }
@@ -266,15 +239,13 @@ namespace LoRaWan.NetworkServer
         {
             if (oldDevAddr is { } someOldDevAddr && loRaDevice.DevAddr != someOldDevAddr)
             {
-                this.deviceCache.CleanupOldDevAddrForDevice(loRaDevice, someOldDevAddr);
+                deviceCache.CleanupOldDevAddrForDevice(loRaDevice, someOldDevAddr);
             }
         }
 
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public Task ResetDeviceCacheAsync() => this.deviceCache.ResetAsync();
-
-        public ValueTask DisposeAsync() => this.deviceCache.DisposeAsync();
+        public Task ResetDeviceCacheAsync() => deviceCache.ResetAsync();
     }
 }
