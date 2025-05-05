@@ -9,7 +9,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.CommonAPI;
     using LoRaWan.Core;
     using Microsoft.Extensions.DependencyInjection;
-    
+
     public static class LoRaApiHttpClient
     {
         public const string Name = nameof(LoRaApiHttpClient);
@@ -17,11 +17,6 @@ namespace LoRaWan.NetworkServer
 
     public static class LoRaApiHttpClientExtensions
     {
-        private const int NumberOfAggressiveRetries = 4;
-        private const int NumberOfRetries = 8;
-        private static readonly TimeSpan AggressiveRetryInterval = TimeSpan.FromMilliseconds(50);
-        private static readonly TimeSpan RetryInterval = TimeSpan.FromMilliseconds(120);
-
         public static IServiceCollection AddApiClient(this IServiceCollection services,
                                                       NetworkServerConfiguration configuration,
                                                       ApiVersion expectedFunctionVersion) =>
