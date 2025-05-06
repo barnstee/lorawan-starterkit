@@ -16,6 +16,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.Regions;
     using LoRaWan.NetworkServer.ADR;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
@@ -688,7 +689,7 @@ namespace LoRaWan.NetworkServer
             }
 
             // Deduct 8 bytes from max payload size.
-            maxPayload -= Constants.LoraProtocolOverheadSize;
+            maxPayload -= LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.LoraProtocolOverheadSize;
 
             // Calculate total C2D message size based on optional C2D Mac commands.
             var totalPayload = cloudToDeviceMsg.GetPayload()?.Length ?? 0;
@@ -736,7 +737,7 @@ namespace LoRaWan.NetworkServer
             {
                 eventProperties = new Dictionary<string, string>();
                 this.logger.LogInformation($"message ack received for cloud to device message id {loRaDevice.LastConfirmedC2DMessageID}");
-                eventProperties.Add(Constants.C2D_MSG_PROPERTY_VALUE_NAME, loRaDevice.LastConfirmedC2DMessageID ?? Constants.C2D_MSG_ID_PLACEHOLDER);
+                eventProperties.Add(LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.C2D_MSG_PROPERTY_VALUE_NAME, loRaDevice.LastConfirmedC2DMessageID ?? LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.C2D_MSG_ID_PLACEHOLDER);
                 loRaDevice.LastConfirmedC2DMessageID = null;
             }
 
@@ -929,7 +930,7 @@ namespace LoRaWan.NetworkServer
             // is <= MAX_FCNT_GAP
             var diff = payloadFcnt > loRaDevice.FCntUp ? payloadFcnt - loRaDevice.FCntUp : loRaDevice.FCntUp - payloadFcnt;
 
-            if (diff > Constants.MaxFcntGap)
+            if (diff > LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.MaxFcntGap)
             {
                 this.logger.LogError($"invalid frame counter (diverges too much), message ignored, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
                 return LoRaDeviceRequestFailedReason.InvalidFrameCounter;

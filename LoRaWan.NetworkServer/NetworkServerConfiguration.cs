@@ -7,6 +7,7 @@ namespace LoRaWan.NetworkServer
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.AspNetCore.Server.Kestrel.Https;
 
     // Network server configuration

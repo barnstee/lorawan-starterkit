@@ -116,7 +116,7 @@ namespace LoRaWan.NetworkServer
             }
         }
 
-        protected async Task CreateDevicesAsync(IReadOnlyList<IoTHubDeviceInfo> devices)
+        protected async Task CreateDevicesAsync(IReadOnlyList<DeviceInfo> devices)
         {
             if (devices?.Count > 0)
             {

@@ -5,6 +5,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
 {
     using System;
     using System.ComponentModel.DataAnnotations;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     public static class LnsMessageTypeParser
     {

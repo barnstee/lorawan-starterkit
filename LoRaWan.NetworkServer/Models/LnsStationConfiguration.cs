@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer.BasicsStation.JsonHandlers
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
     using System;
     using System.Collections.Generic;
@@ -10,6 +10,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.JsonHandlers
     using System.Runtime.Serialization;
     using System.Text;
     using System.Text.Json;
+    using global::LoRaWan;
     using LoRaTools.Regions;
     using Newtonsoft.Json;
 
@@ -25,7 +26,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.JsonHandlers
         };
 
         [DataContract]
-        public class ChannelConfig(bool enable, LnsStationConfiguration.Radio radio, int @if)
+        public class ChannelConfig(bool enable, Radio radio, int @if)
         {
             [DataMember(Name = "enable")]
             public bool Enable { get; } = enable;
@@ -38,7 +39,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.JsonHandlers
         }
 
         [DataContract]
-        public class StandardConfig(bool enable, LnsStationConfiguration.Radio radio, int @if, Bandwidth bandwidth, SpreadingFactor spreadingFactor)
+        public class StandardConfig(bool enable, Radio radio, int @if, Bandwidth bandwidth, SpreadingFactor spreadingFactor)
         {
             [DataMember(Name = "enable")]
             public bool Enable { get; } = enable;
@@ -67,18 +68,18 @@ namespace LoRaWan.NetworkServer.BasicsStation.JsonHandlers
         }
 
         [DataContract]
-        public class Sx1301Config(LnsStationConfiguration.RadioConfig radio0,
-                                  LnsStationConfiguration.RadioConfig radio1,
-                                  LnsStationConfiguration.StandardConfig channelLoraStd,
-                                  LnsStationConfiguration.ChannelConfig channelFsk,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf0,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf1,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf2,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf3,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf4,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf5,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf6,
-                                  LnsStationConfiguration.ChannelConfig channelMultiSf7)
+        public class Sx1301Config(RadioConfig radio0,
+                                  RadioConfig radio1,
+                                  StandardConfig channelLoraStd,
+                                  ChannelConfig channelFsk,
+                                  ChannelConfig channelMultiSf0,
+                                  ChannelConfig channelMultiSf1,
+                                  ChannelConfig channelMultiSf2,
+                                  ChannelConfig channelMultiSf3,
+                                  ChannelConfig channelMultiSf4,
+                                  ChannelConfig channelMultiSf5,
+                                  ChannelConfig channelMultiSf6,
+                                  ChannelConfig channelMultiSf7)
         {
             [DataMember(Name = "radio_0")]
             public RadioConfig Radio0 { get; } = radio0;

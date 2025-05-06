@@ -15,13 +15,13 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
     using LoRaTools;
     using LoRaTools.LoRaMessage;
     using LoRaTools.NetworkServerDiscovery;
-    using LoRaWan.NetworkServer.BasicsStation.JsonHandlers;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Routing;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
-    using static LoRaWan.NetworkServer.BasicsStation.JsonHandlers.LnsData;
+    using static LoRaWANContainer.LoRaWan.NetworkServer.Models.LnsData;
 
     internal class LnsProtocolMessageProcessor(IBasicsStationConfigurationService basicsStationConfigurationService,
                                        WebSocketWriterRegistry<StationEui, string> socketWriterRegistry,

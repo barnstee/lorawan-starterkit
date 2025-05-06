@@ -12,6 +12,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.LoRaMessage;
     using LoRaTools.Regions;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
     using static ReceiveWindowNumber;
@@ -276,8 +277,8 @@ namespace LoRaWan.NetworkServer
                 var fcntUpDelta = FCntUp >= LastSavedFCntUp ? FCntUp - LastSavedFCntUp : LastSavedFCntUp - FCntUp;
                 var fcntDownDelta = FCntDown >= LastSavedFCntDown ? FCntDown - LastSavedFCntDown : LastSavedFCntDown - FCntDown;
 
-                if (fcntDownDelta >= Constants.MaxFcntUnsavedDelta ||
-                    fcntUpDelta >= Constants.MaxFcntUnsavedDelta ||
+                if (fcntDownDelta >= LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.MaxFcntUnsavedDelta ||
+                    fcntUpDelta >= LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.MaxFcntUnsavedDelta ||
                     (this.hasFrameCountChanges && force))
                 {
                     var savedFcntDown = FCntDown;
@@ -593,7 +594,7 @@ namespace LoRaWan.NetworkServer
                 : null;
 
             bool CanRolloverToNext16Bits(ushort payloadFcntUp) =>
-                Supports32BitFCnt && payloadFcntUp + (ushort.MaxValue - (ushort)this.fcntUp) <= Constants.MaxFcntGap;
+                Supports32BitFCnt && payloadFcntUp + (ushort.MaxValue - (ushort)this.fcntUp) <= LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.MaxFcntGap;
 
             static uint IncrementUpper16bit(uint val) => (val | 0x0000ffff) + 1;
         }

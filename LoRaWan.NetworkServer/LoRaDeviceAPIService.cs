@@ -14,6 +14,7 @@ namespace LoRaWan.NetworkServer
     using System.Threading.Tasks;
     using LoRaTools.CommonAPI;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
@@ -152,7 +153,7 @@ namespace LoRaWan.NetworkServer
             }
 
             var result = await response.Content.ReadAsStringAsync();
-            var devices = JsonConvert.DeserializeObject<List<IoTHubDeviceInfo>>(result);
+            var devices = JsonConvert.DeserializeObject<List<DeviceInfo>>(result);
             return new SearchDevicesResult(devices);
         }
 

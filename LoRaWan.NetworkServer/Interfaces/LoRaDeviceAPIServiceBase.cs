@@ -1,7 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer
+using LoRaWan;
+using LoRaWan.NetworkServer;
+
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
     using System;
     using System.Net.Http;
@@ -10,6 +13,7 @@ namespace LoRaWan.NetworkServer
     using System.Threading;
     using System.Threading.Tasks;
     using LoRaTools.CommonAPI;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     /// <summary>
     /// LoRa Device API contract.

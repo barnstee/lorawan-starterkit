@@ -6,6 +6,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.CommonAPI;
     using LoRaWan.NetworkServer.ADR;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using System;
 
     public class FunctionBundlerADRExecutionItem : IFunctionBundlerExecutionItem

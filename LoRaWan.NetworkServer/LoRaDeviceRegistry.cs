@@ -123,49 +123,17 @@ namespace LoRaWan.NetworkServer
         /// <summary>
         /// Gets a device by DevEUI.
         /// </summary>
-        public async Task<LoRaDevice> GetDeviceByDevEUIAsync(DevEui devEUI)
+        public Task<LoRaDevice> GetDeviceByDevEUIAsync(DevEui devEUI)
         {
             if (deviceCache.TryGetByDevEui(devEUI, out var cachedDevice))
             {
-                return cachedDevice;
-            }
-
-            var key = await loRaDeviceAPIService.GetPrimaryKeyByEuiAsync(devEUI);
-            if (string.IsNullOrEmpty(key))
-                return null;
-
-            if (this.initializers != null)
-            {
-                foreach (var initializers in this.initializers)
-                {
-
-                }
+                return Task.FromResult(cachedDevice);
             }
 
             return null;
         }
 
-        // Creates cache key for join device loader: "joinloader:{devEUI}"
-        private static string GetJoinDeviceLoaderCacheKey(DevEui devEui) => string.Concat("joinloader:", devEui);
         internal static string GetDevLoaderCacheKey(DevAddr devAddr) => string.Concat("devaddrloader:", devAddr);
-
-        // Removes join device loader from cache
-        private void RemoveJoinDeviceLoader(DevEui devEui) => cache.Remove(GetJoinDeviceLoaderCacheKey(devEui));
-
-        // Gets or adds a join device loader to the memory cache
-        private JoinDeviceLoader GetOrCreateJoinDeviceLoader(IoTHubDeviceInfo ioTHubDeviceInfo)
-        {
-            // Need to get and ensure it has started since the GetOrAdd can create multiple objects
-            // https://github.com/aspnet/Extensions/issues/708
-            lock (this.getOrCreateJoinDeviceLoaderLock)
-            {
-                return cache.GetOrCreate(GetJoinDeviceLoaderCacheKey(ioTHubDeviceInfo.DevEUI), (entry) =>
-                {
-                    entry.SlidingExpiration = TimeSpan.FromMinutes(INTERVAL_TO_CACHE_DEVICE_IN_JOIN_PROCESS_IN_MINUTES);
-                    return new JoinDeviceLoader(ioTHubDeviceInfo, deviceCache, loggerFactory.CreateLogger<JoinDeviceLoader>());
-                });
-            }
-        }
 
         /// <summary>
         /// Searchs for devices that match the join request.
@@ -210,12 +178,7 @@ namespace LoRaWan.NetworkServer
                 return cachedDevice;
             }
 
-            var loader = GetOrCreateJoinDeviceLoader(matchingDeviceInfo);
-            var loRaDevice = await loader.LoadAsync();
-            if (!loader.CanCache)
-                RemoveJoinDeviceLoader(devEUI);
-
-            return loRaDevice;
+            return null;
         }
 
         /// <summary>

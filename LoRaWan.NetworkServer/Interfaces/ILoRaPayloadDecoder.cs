@@ -2,11 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using LoRaWan;
-using LoRaWan.NetworkServer;
 
 namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
     using System.Threading.Tasks;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     public interface ILoRaPayloadDecoder
     {

@@ -15,6 +15,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.Regions;
     using LoRaTools.Utils;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using static ReceiveWindowNumber;
@@ -103,7 +104,7 @@ namespace LoRaWan.NetworkServer
             var maxPayloadSize = loRaRegion.GetMaxPayloadSize(datr);
 
             // Deduct 8 bytes from max payload size.
-            maxPayloadSize -= Constants.LoraProtocolOverheadSize;
+            maxPayloadSize -= LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.LoraProtocolOverheadSize;
 
             var availablePayloadSize = maxPayloadSize;
 
@@ -147,7 +148,7 @@ namespace LoRaWan.NetworkServer
                     if (cloudToDeviceMessage.Confirmed)
                     {
                         requiresDeviceAcknowlegement = true;
-                        loRaDevice.LastConfirmedC2DMessageID = cloudToDeviceMessage.MessageId ?? Constants.C2D_MSG_ID_PLACEHOLDER;
+                        loRaDevice.LastConfirmedC2DMessageID = cloudToDeviceMessage.MessageId ?? LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.C2D_MSG_ID_PLACEHOLDER;
                     }
 
                     if (cloudToDeviceMessage.Fport.IsAppSpecific() || cloudToDeviceMessage.Fport.IsReserved())
@@ -290,7 +291,7 @@ namespace LoRaWan.NetworkServer
             var maxPayloadSize = loRaRegion.GetMaxPayloadSize(datr);
 
             // Deduct 8 bytes from max payload size.
-            maxPayloadSize -= Constants.LoraProtocolOverheadSize;
+            maxPayloadSize -= LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.LoraProtocolOverheadSize;
 
             var availablePayloadSize = maxPayloadSize;
 
@@ -314,7 +315,7 @@ namespace LoRaWan.NetworkServer
 
             if (cloudToDeviceMessage.Confirmed)
             {
-                loRaDevice.LastConfirmedC2DMessageID = cloudToDeviceMessage.MessageId ?? Constants.C2D_MSG_ID_PLACEHOLDER;
+                loRaDevice.LastConfirmedC2DMessageID = cloudToDeviceMessage.MessageId ?? LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants.C2D_MSG_ID_PLACEHOLDER;
             }
 
             var frmPayload = cloudToDeviceMessage.GetPayload();

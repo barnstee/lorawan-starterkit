@@ -7,6 +7,7 @@ namespace LoRaWan.NetworkServer.Logger
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
 

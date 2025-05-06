@@ -7,6 +7,7 @@ namespace LoRaWan.NetworkServer.Logger
     using System;
     using System.Collections.Concurrent;
     using LoRaTools;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
     using Microsoft.Extensions.Logging;

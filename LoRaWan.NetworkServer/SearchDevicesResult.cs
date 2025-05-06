@@ -11,12 +11,12 @@ namespace LoRaWan.NetworkServer
     /// <summary>
     /// Results of a <see cref="LoRaDeviceAPIServiceBase.SearchDevicesAsync"/> call.
     /// </summary>
-    public class SearchDevicesResult : IReadOnlyList<IoTHubDeviceInfo>
+    public class SearchDevicesResult : IReadOnlyList<DeviceInfo>
     {
         /// <summary>
         /// Gets list of devices that match the criteria.
         /// </summary>
-        public IReadOnlyList<IoTHubDeviceInfo> Devices { get; } = Array.Empty<IoTHubDeviceInfo>();
+        public IReadOnlyList<DeviceInfo> Devices { get; } = Array.Empty<DeviceInfo>();
 
         /// <summary>
         /// Gets or sets a value indicating whether the dev nonce was already used.
@@ -27,16 +27,16 @@ namespace LoRaWan.NetworkServer
 
         public int Count => Devices.Count;
 
-        public IoTHubDeviceInfo this[int index] => Devices[index];
+        public DeviceInfo this[int index] => Devices[index];
 
         public SearchDevicesResult() { }
 
-        public SearchDevicesResult(IReadOnlyList<IoTHubDeviceInfo> devices)
+        public SearchDevicesResult(IReadOnlyList<DeviceInfo> devices)
         {
-            Devices = devices ?? Array.Empty<IoTHubDeviceInfo>();
+            Devices = devices ?? Array.Empty<DeviceInfo>();
         }
 
-        public IEnumerator<IoTHubDeviceInfo> GetEnumerator() =>
+        public IEnumerator<DeviceInfo> GetEnumerator() =>
             Devices.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() =>
