@@ -66,7 +66,9 @@ namespace LoRaWan.NetworkServer.BasicsStation
                 .AddSingleton(_ => new Meter(MetricRegistry.Namespace, MetricRegistry.Version));
 
             if (NetworkServerConfiguration.ClientCertificateMode is not ClientCertificateMode.NoCertificate)
+            {
                 _ = services.AddSingleton<IClientCertificateValidatorService, ClientCertificateValidatorService>();
+            }
 
             _ = services.AddSingleton<ILnsRemoteCallHandler, LnsRemoteCallHandler>();
         }
@@ -85,7 +87,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
                    .UseWebSockets()
                    .UseEndpoints(endpoints =>
                    {
-                       Map(HttpMethod.Get, "/router-info",
+                       Map(HttpMethod.Get, BasicsStationNetworkServer.DiscoveryEndpoint,
                            context => context.Request.Host.Port is BasicsStationNetworkServer.LnsPort or BasicsStationNetworkServer.LnsSecurePort,
                            (ILnsProtocolMessageProcessor processor) => processor.HandleDiscoveryAsync);
 
@@ -108,6 +110,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
                                    context.Response.StatusCode = (int)System.Net.HttpStatusCode.MethodNotAllowed;
                                    return;
                                }
+
                                var processor = context.RequestServices.GetRequiredService<TService>();
                                var handler = handlerMapper(processor);
                                await handler(context, context.RequestAborted);

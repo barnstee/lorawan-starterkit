@@ -1,8 +1,8 @@
 #This docker builds a container for the LoRa Basics station on amd64 architecture
 
 # NOTE: Use either docker.io or your own registry address to build the image
-ARG CONTAINER_REGISTRY_ADDRESS=your-registry-address.azurecr.io
-FROM $CONTAINER_REGISTRY_ADDRESS/amd64/debian:bullseye as build
+ARG CONTAINER_REGISTRY_ADDRESS=docker.io
+FROM $CONTAINER_REGISTRY_ADDRESS/amd64/debian:bullseye AS build
 RUN apt-get update
 RUN apt-get install -y git
 RUN apt-get install -y --no-install-recommends apt-utils build-essential
@@ -14,11 +14,10 @@ RUN make platform=linux variant=std
 FROM $CONTAINER_REGISTRY_ADDRESS/amd64/debian:bullseye-slim
 WORKDIR /basicstation
 COPY --from=build /basicstation/build-linux-std/bin/station ./station.std
-COPY LoRaEngine/modules/LoRaBasicsStationModule/helper-functions.sh .
-COPY LoRaEngine/modules/LoRaBasicsStationModule/start_basicsstation.sh .
-COPY LoRaEngine/modules/LoRaBasicsStationModule/sx1301.station.conf .
+COPY helper-functions.sh .
+COPY start_basicsstation.sh .
+COPY sx1301.station.conf .
 COPY --from=build /basicstation/deps/lgw/platform-linux/reset_lgw.sh .
-COPY LICENSE .
-COPY ./LoRaEngine/modules/LoRaBasicsStationModule/NOTICE.txt .
+COPY ./NOTICE.txt .
 RUN chmod +x ./start_basicsstation.sh
 ENTRYPOINT ["./start_basicsstation.sh"]
