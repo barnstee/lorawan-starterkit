@@ -88,29 +88,19 @@ namespace LoRaWan.NetworkServer.BasicsStation
                    .UseEndpoints(endpoints =>
                    {
                        Map(HttpMethod.Get, BasicsStationNetworkServer.DiscoveryEndpoint,
-                           context => context.Request.Host.Port is BasicsStationNetworkServer.LnsPort or BasicsStationNetworkServer.LnsSecurePort,
-                           (ILnsProtocolMessageProcessor processor) => processor.HandleDiscoveryAsync);
+                          (ILnsProtocolMessageProcessor processor) => processor.HandleDiscoveryAsync);
 
                        Map(HttpMethod.Get, $"{BasicsStationNetworkServer.DataEndpoint}/{{{BasicsStationNetworkServer.RouterIdPathParameterName}:required}}",
-                           context => context.Request.Host.Port is BasicsStationNetworkServer.LnsPort or BasicsStationNetworkServer.LnsSecurePort,
-                           (ILnsProtocolMessageProcessor processor) => processor.HandleDataAsync);
+                          (ILnsProtocolMessageProcessor processor) => processor.HandleDataAsync);
 
                        Map(HttpMethod.Post, BasicsStationNetworkServer.UpdateInfoEndpoint,
-                           context => context.Connection.LocalPort is BasicsStationNetworkServer.CupsPort,
-                           (ICupsProtocolMessageProcessor processor) => processor.HandleUpdateInfoAsync);
+                          (ICupsProtocolMessageProcessor processor) => processor.HandleUpdateInfoAsync);
 
                        void Map<TService>(HttpMethod method, string pattern,
-                                          Predicate<HttpContext> predicate,
                                           Func<TService, Func<HttpContext, CancellationToken, Task>> handlerMapper)
                        {
                            _ = endpoints.MapMethods(pattern, [method.ToString()], async context =>
                            {
-                               if (!predicate(context))
-                               {
-                                   context.Response.StatusCode = (int)System.Net.HttpStatusCode.MethodNotAllowed;
-                                   return;
-                               }
-
                                var processor = context.RequestServices.GetRequiredService<TService>();
                                var handler = handlerMapper(processor);
                                await handler(context, context.RequestAborted);

@@ -162,7 +162,7 @@ namespace LoRaWan.NetworkServer
             GetPrimaryKeyByEuiAsync(eui.ToString());
 
         /// <inheritdoc />
-        public override Task<string> GetPrimaryKeyByEuiAsync(StationEui eui) =>
+        public override Task<string> GetPrimaryKeyByEuiAsync(StationEui? eui) =>
             GetPrimaryKeyByEuiAsync(eui.ToString());
 
         private async Task<string> GetPrimaryKeyByEuiAsync(string eui)

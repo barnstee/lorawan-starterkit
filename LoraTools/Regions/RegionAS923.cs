@@ -115,7 +115,7 @@ namespace LoRaTools.Regions
         public override IReadOnlyList<IReadOnlyList<DataRateIndex>> RX1DROffsetTable =>
             ApplyDwellTimeLimits ? RX1DROffsetTableWithDwell : RX1DROffsetTableNoDwell;
 
-        protected override DwellTimeSetting DefaultDwellTimeSetting { get; } = new DwellTimeSetting(DownlinkDwellTime: true, UplinkDwellTime: true, 5);
+        protected override DwellTimeSetting DefaultDwellTimeSetting { get; } = new DwellTimeSetting() { DownlinkDwellTime = true, UplinkDwellTime = true, MaxEirp = 5 };
 
         private bool ApplyDwellTimeLimits => (this.dwellTimeSetting ?? DefaultDwellTimeSetting).DownlinkDwellTime;
 

@@ -48,7 +48,7 @@ namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
         /// Searches the primary key for a station device in IoT Hub.
         /// </summary>
         /// <param name="eui">EUI of the station.</param>
-        public abstract Task<string> GetPrimaryKeyByEuiAsync(StationEui eui);
+        public abstract Task<string> GetPrimaryKeyByEuiAsync(StationEui? eui);
 
         /// <summary>
         /// Fetch station credentials in IoT Hub.

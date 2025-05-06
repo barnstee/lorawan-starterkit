@@ -10,6 +10,13 @@ namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
     public static class LnsData
     {
         [DataContract]
+        public class BasicMessage
+        {
+            [DataMember(Name = "msgtype")]
+            public LnsMessageType MessageType { get; set; }
+        }
+
+        [DataContract]
         public class VersionMessage
         {
             [DataMember(Name = "msgtype")]

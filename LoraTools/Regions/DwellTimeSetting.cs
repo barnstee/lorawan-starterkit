@@ -5,5 +5,18 @@
 
 namespace LoRaTools.Regions
 {
-    public sealed record DwellTimeSetting(bool DownlinkDwellTime, bool UplinkDwellTime, uint MaxEirp);
+    using System.Runtime.Serialization;
+
+    [DataContract]
+    public class DwellTimeSetting()
+    {
+        [DataMember(Name = "downlinkDwellLimit")]
+        public bool DownlinkDwellTime { get; set; }
+
+        [DataMember(Name = "uplinkDwellLimit")]
+        public bool UplinkDwellTime { get; set; }
+
+        [DataMember(Name = "eirp")]
+        public uint MaxEirp { get; set; }
+    }
 }

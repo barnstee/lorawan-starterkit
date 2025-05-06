@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer.ADR
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
+    using global::LoRaWan.NetworkServer;
     using LoRaTools.ADR;
-    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
 
     public interface ILoRAADRManagerFactory
     {

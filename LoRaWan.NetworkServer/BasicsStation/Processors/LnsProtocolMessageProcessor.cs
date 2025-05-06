@@ -107,7 +107,8 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                                                   string json,
                                                   CancellationToken cancellationToken)
         {
-            switch (JsonConvert.DeserializeObject<LnsMessageType>(json))
+            var basic = JsonConvert.DeserializeObject<BasicMessage>(json);
+            switch (basic.MessageType)
             {
                 case LnsMessageType.Version:
                     var versionMessage = JsonConvert.DeserializeObject<VersionMessage>(json);
@@ -120,7 +121,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                     LogReceivedMessage(logger, "jreq", json, null);
                     try
                     {
-                        var jreq = JsonConvert.DeserializeObject< JoinRequestMessage>(json);
+                        var jreq = JsonConvert.DeserializeObject<JoinRequestMessage>(json);
 
                         var routerRegion = await basicsStationConfigurationService.GetRegionAsync(stationEui, cancellationToken);
 
