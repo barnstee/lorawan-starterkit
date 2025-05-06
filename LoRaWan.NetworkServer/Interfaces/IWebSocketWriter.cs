@@ -3,14 +3,16 @@
 
 #nullable enable
 
-namespace LoRaWan.NetworkServer.BasicsStation.Processors
+using LoRaWan;
+
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.AspNetCore.Http;
 
-    public interface ICupsProtocolMessageProcessor
+    public interface IWebSocketWriter<in T> where T : notnull
     {
-        public Task HandleUpdateInfoAsync(HttpContext httpContext, CancellationToken token);
+        bool IsClosed { get; }
+        ValueTask SendAsync(T message, CancellationToken cancellationToken);
     }
 }

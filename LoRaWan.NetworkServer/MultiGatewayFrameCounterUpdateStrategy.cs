@@ -4,6 +4,7 @@
 namespace LoRaWan.NetworkServer
 {
     using System.Threading.Tasks;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
 
     // Frame counter strategy for multi gateway scenarios
     // Frame Down counters is resolved by calling the LoRa device API. Only a single caller will received a valid frame counter (> 0)

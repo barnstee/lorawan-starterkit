@@ -3,8 +3,10 @@
 
 #nullable enable
 
-namespace LoRaWan.NetworkServer
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
+    using global::LoRaWan.NetworkServer;
+
     public interface IConcentratorDeduplication
     {
         /// <summary>

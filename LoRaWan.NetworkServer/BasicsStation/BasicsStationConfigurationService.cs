@@ -7,6 +7,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System.Threading;
     using System.Threading.Tasks;
     using LoRaTools.Regions;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
 
     internal sealed class BasicsStationConfigurationService() : IBasicsStationConfigurationService, IDisposable
     {

@@ -7,6 +7,7 @@ namespace LoRaWan.NetworkServer
 {
     using System;
     using LoRaTools.LoRaMessage;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Logging;
 

@@ -14,6 +14,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.Mac;
     using LoRaTools.Regions;
     using LoRaTools.Utils;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using static ReceiveWindowNumber;

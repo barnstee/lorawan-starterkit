@@ -10,6 +10,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.Regions;
     using LoRaWan;
     using LoRaWan.NetworkServer.BasicsStation;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
     using static LoRaWan.NetworkServer.BasicsStation.JsonHandlers.LnsData;
 

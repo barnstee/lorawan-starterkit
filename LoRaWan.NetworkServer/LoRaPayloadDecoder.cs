@@ -11,6 +11,7 @@ namespace LoRaWan.NetworkServer
     using System.Text;
     using System.Threading.Tasks;
     using System.Web;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;

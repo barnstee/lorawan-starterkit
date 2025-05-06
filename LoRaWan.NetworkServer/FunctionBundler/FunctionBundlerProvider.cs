@@ -6,6 +6,7 @@ namespace LoRaWan.NetworkServer
     using System.Collections.Generic;
     using System.Text.Json;
     using LoRaTools.LoRaMessage;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
 
     public class FunctionBundlerProvider(LoRaDeviceAPIServiceBase deviceApi,

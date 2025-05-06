@@ -3,6 +3,7 @@
 
 namespace LoRaWan.NetworkServer
 {
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
     using System;
 

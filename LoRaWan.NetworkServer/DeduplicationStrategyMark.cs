@@ -4,6 +4,7 @@
 namespace LoRaWan.NetworkServer
 {
     using System;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
 
     public class DeduplicationStrategyMark : ILoRaDeviceMessageDeduplicationStrategy

@@ -4,6 +4,7 @@
 namespace LoRaWan.NetworkServer
 {
     using LoRaTools.CommonAPI;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using System;
 
     public class FunctionBundlerPreferredGatewayExecutionItem : IFunctionBundlerExecutionItem

@@ -14,6 +14,7 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
     using System.Threading;
     using System.Threading.Tasks;
     using LoRaTools.CommonAPI;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;

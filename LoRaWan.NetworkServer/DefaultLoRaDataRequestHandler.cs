@@ -15,6 +15,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.Mac;
     using LoRaTools.Regions;
     using LoRaWan.NetworkServer.ADR;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 

@@ -13,6 +13,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using LoRaWan.NetworkServer;
     using LoRaWan.NetworkServer.ADR;
     using LoRaWan.NetworkServer.BasicsStation.Processors;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Server.Kestrel.Https;
     using Microsoft.Extensions.Configuration;

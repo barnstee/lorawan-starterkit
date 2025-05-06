@@ -4,6 +4,7 @@
 namespace LoRaWan.NetworkServer
 {
     using System.Collections.Generic;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
 
     /// <summary>
     /// Primitive that keep tracks of changes.

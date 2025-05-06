@@ -11,6 +11,8 @@ namespace LoRaWan.NetworkServer
     using System.Threading;
     using System.Threading.Channels;
     using System.Threading.Tasks;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+
     public static class CancellationTokenExtensions
     {
         /// <summary>

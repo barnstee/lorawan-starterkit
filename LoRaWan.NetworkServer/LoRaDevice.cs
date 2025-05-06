@@ -11,6 +11,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools;
     using LoRaTools.LoRaMessage;
     using LoRaTools.Regions;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
     using static ReceiveWindowNumber;

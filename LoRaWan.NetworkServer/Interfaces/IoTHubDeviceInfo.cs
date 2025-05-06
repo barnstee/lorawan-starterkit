@@ -1,19 +1,15 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer
+
+
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
+    using global::LoRaWan;
     using Newtonsoft.Json;
 
     public class IoTHubDeviceInfo
     {
-        [JsonProperty(nameof(DevAddr))]
-        public string DevAddrString
-        {
-            get => DevAddr?.ToString();
-            set => DevAddr = value is { Length: 8 } some ? LoRaWan.DevAddr.Parse(some) : null;
-        }
-
         [JsonIgnore]
         public DevAddr? DevAddr { get; set; }
 

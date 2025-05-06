@@ -4,6 +4,7 @@
 namespace LoRaWan.NetworkServer.ADR
 {
     using LoRaTools.ADR;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
 
     public interface ILoRAADRManagerFactory
     {

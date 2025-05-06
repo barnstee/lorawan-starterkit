@@ -11,6 +11,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System.Threading;
     using System.Threading.Tasks;
     using LoRaTools.LoRaPhysical;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
 
     internal class DownstreamMessageSender(WebSocketWriterRegistry<StationEui, string> socketWriterRegistry,

@@ -7,6 +7,7 @@ namespace LoRaWan.NetworkServer
     using LoRaTools.LoRaMessage;
     using LoRaTools.LoRaPhysical;
     using LoRaTools.Regions;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using static LoRaWan.NetworkServer.BasicsStation.JsonHandlers.LnsData;
 
     public class LoRaRequest

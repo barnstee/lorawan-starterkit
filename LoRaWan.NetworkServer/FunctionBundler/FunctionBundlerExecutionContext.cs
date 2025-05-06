@@ -4,6 +4,7 @@
 namespace LoRaWan.NetworkServer
 {
     using LoRaTools.LoRaMessage;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
 
     public class FunctionBundlerExecutionContext
     {

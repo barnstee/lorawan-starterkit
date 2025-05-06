@@ -4,6 +4,7 @@
 namespace LoRaWan.NetworkServer.ADR
 {
     using LoRaTools.ADR;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
     using System;
     using System.Threading;

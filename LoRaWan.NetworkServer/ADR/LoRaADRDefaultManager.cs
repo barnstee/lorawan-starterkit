@@ -5,6 +5,7 @@ namespace LoRaWan.NetworkServer.ADR
 {
     using System.Threading.Tasks;
     using LoRaTools.ADR;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
 
     public class LoRaADRDefaultManager : LoRaADRManagerBase
