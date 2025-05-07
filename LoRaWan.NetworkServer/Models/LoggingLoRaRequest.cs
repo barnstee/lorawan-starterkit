@@ -1,16 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
     using System;
     using System.Diagnostics.Metrics;
+    using global::LoRaWan;
+    using global::LoRaWan.NetworkServer;
     using LoRaTools.LoRaMessage;
     using LoRaTools.LoRaPhysical;
     using LoRaTools.Regions;
-    using LoRaWan;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
-    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;
     using static LoRaWANContainer.LoRaWan.NetworkServer.Models.LnsData;
 

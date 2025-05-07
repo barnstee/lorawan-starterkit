@@ -38,9 +38,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
                 })
                 .AddMemoryCache()
                 .AddHttpClient()
-                //.AddApiClient(NetworkServerConfiguration, ApiVersion.LatestVersion)
                 .AddSingleton(NetworkServerConfiguration)
-                .AddSingleton<ILnsRemoteCallHandler, LnsRemoteCallHandler>()
                 .AddSingleton<ILoRaDeviceFrameCounterUpdateStrategyProvider, LoRaDeviceFrameCounterUpdateStrategyProvider>()
                 .AddSingleton<IDeduplicationStrategyFactory, DeduplicationStrategyFactory>()
                 .AddSingleton<ILoRaADRStrategyProvider, LoRaADRStrategyProvider>()
@@ -68,8 +66,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
             {
                 _ = services.AddSingleton<IClientCertificateValidatorService, ClientCertificateValidatorService>();
             }
-
-            _ = services.AddSingleton<ILnsRemoteCallHandler, LnsRemoteCallHandler>();
         }
 
 #pragma warning disable CA1822 // Mark members as static
