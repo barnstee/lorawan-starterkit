@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
     using System;
     using System.Text;
@@ -26,9 +26,7 @@ namespace LoRaWan.NetworkServer
         public byte[] GetPayload()
         {
             if (!string.IsNullOrEmpty(Payload))
-            {
                 return Encoding.UTF8.GetBytes(Payload);
-            }
 
             if (!string.IsNullOrEmpty(RawPayload))
             {
