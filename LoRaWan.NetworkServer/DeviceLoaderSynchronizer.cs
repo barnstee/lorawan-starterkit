@@ -9,6 +9,7 @@ namespace LoRaWan.NetworkServer
     using System.Threading.Tasks;
     using LoRaTools;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;
 
     /// <summary>

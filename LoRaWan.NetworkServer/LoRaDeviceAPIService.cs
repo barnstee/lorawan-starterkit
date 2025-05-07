@@ -260,7 +260,7 @@ namespace LoRaWan.NetworkServer
             return response.Content;
         }
 
-        private HttpClient CreateClient() => this.httpClientFactory.CreateClient(LoRaApiHttpClient.Name);
+        private HttpClient CreateClient() => this.httpClientFactory.CreateClient("LoRaApiHttpClient");
 
         public override async Task SendJoinNotificationAsync(DeviceJoinNotification deviceJoinNotification, CancellationToken token)
         {

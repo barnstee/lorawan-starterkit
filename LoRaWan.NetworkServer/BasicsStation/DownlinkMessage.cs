@@ -7,7 +7,7 @@ namespace LoRaTools.LoRaPhysical
 {
     using System;
     using LoRaWan;
-    using LoRaWan.NetworkServer;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Utils;
 
     /// <summary>

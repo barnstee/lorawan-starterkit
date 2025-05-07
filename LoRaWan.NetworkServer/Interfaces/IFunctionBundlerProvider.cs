@@ -6,6 +6,7 @@ using LoRaWan.NetworkServer;
 namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
     using LoRaTools.LoRaMessage;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     public interface IFunctionBundlerProvider
     {

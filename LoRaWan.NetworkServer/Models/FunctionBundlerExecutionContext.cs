@@ -12,14 +12,15 @@ namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
     {
         public FunctionBundlerExecutionContext(string gatewayId, uint fCntUp, uint fCntDown,
                                                LoRaPayloadData loRaPayload, LoRaDevice loRaDevice,
-                                               IDeduplicationStrategyFactory deduplicationFactory, LoRaRequest request)
+                                               IDeduplicationStrategyFactory deduplicationFactory,
+                                               LoRaRequest request)
         {
             GatewayId = gatewayId;
             FCntUp = fCntUp;
             FCntDown = fCntDown;
             LoRaPayload = loRaPayload;
             LoRaDevice = loRaDevice;
-            DeduplicationFactory = deduplicationFactory;
+           DeduplicationFactory = deduplicationFactory;
             Request = request;
         }
 

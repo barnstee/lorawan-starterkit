@@ -8,6 +8,7 @@ namespace LoRaWan.NetworkServer
     using System.Threading;
     using System.Threading.Tasks;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
@@ -24,8 +25,6 @@ namespace LoRaWan.NetworkServer
         ILoggerFactory loggerFactory,
         ILogger<LoRaDeviceRegistry> logger) : ILoRaDeviceRegistry
     {
-        // Caches a device making join for 30 minutes
-        private const int INTERVAL_TO_CACHE_DEVICE_IN_JOIN_PROCESS_IN_MINUTES = 30;
         private readonly HashSet<ILoRaDeviceInitializer> initializers = [];
         private readonly Lock getOrCreateLoadingDevicesRequestQueueLock = new Lock();
         private readonly Lock getOrCreateJoinDeviceLoaderLock = new Lock();

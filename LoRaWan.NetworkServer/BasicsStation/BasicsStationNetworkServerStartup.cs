@@ -8,7 +8,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System.Globalization;
     using Logger;
     using LoRaTools.ADR;
-    using LoRaTools.CommonAPI;
     using LoRaWan;
     using LoRaWan.NetworkServer;
     using LoRaWan.NetworkServer.ADR;
@@ -39,7 +38,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
                 })
                 .AddMemoryCache()
                 .AddHttpClient()
-                .AddApiClient(NetworkServerConfiguration, ApiVersion.LatestVersion)
+                //.AddApiClient(NetworkServerConfiguration, ApiVersion.LatestVersion)
                 .AddSingleton(NetworkServerConfiguration)
                 .AddSingleton<ILnsRemoteCallHandler, LnsRemoteCallHandler>()
                 .AddSingleton<ILoRaDeviceFrameCounterUpdateStrategyProvider, LoRaDeviceFrameCounterUpdateStrategyProvider>()

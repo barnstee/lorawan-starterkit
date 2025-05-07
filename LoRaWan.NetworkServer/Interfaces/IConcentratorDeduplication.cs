@@ -6,6 +6,7 @@
 namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
     using global::LoRaWan.NetworkServer;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     public interface IConcentratorDeduplication
     {
