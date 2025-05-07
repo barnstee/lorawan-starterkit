@@ -1,24 +1,22 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using LoRaWan;
-using LoRaWan.NetworkServer.BasicsStation;
+
 
 namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using global::LoRaWan;
+    using global::LoRaWan.NetworkServer.BasicsStation;
     using LoRaTools.Regions;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     internal interface IBasicsStationConfigurationService
     {
-        Task SetReportedPackageVersionAsync(StationEui stationEui, string package, CancellationToken cancellationToken);
-
         Task<string> GetRouterConfigMessageAsync(StationEui stationEui, CancellationToken cancellationToken);
 
         Task<Region> GetRegionAsync(StationEui stationEui, CancellationToken cancellationToken);
-
-        Task<string[]> GetAllowedClientThumbprintsAsync(StationEui stationEui, CancellationToken cancellationToken);
 
         Task<CupsTwinInfo> GetCupsConfigAsync(StationEui? stationEui, CancellationToken cancellationToken);
     }

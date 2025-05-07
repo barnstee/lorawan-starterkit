@@ -85,17 +85,13 @@ namespace LoRaWan.NetworkServer
         {
             var config = new NetworkServerConfiguration();
 
-            try
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PROCESSING_DELAY_IN_MS")))
             {
                 var delay = int.Parse(Environment.GetEnvironmentVariable("PROCESSING_DELAY_IN_MS"), NumberFormatInfo.InvariantInfo);
                 if (delay != 0)
                 {
                     config.ProcessingDelayInMilliseconds = delay;
                 }
-            }
-            catch (Exception)
-            {
-                // do nothing
             }
 
             config.HttpsProxy = Environment.GetEnvironmentVariable("HTTPS_PROXY");

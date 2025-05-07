@@ -8,7 +8,6 @@ namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
     using System;
     using LoRaTools.LoRaMessage;
-    using LoRaTools.LoRaPhysical;
     using LoRaTools.Regions;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using static LoRaWANContainer.LoRaWan.NetworkServer.Models.LnsData;

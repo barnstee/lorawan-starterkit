@@ -10,7 +10,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using LoRaTools.LoRaPhysical;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using LoRaWANContainer.LoRaWan.NetworkServer.Models;
     using Microsoft.Extensions.Logging;

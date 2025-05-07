@@ -4,7 +4,7 @@
 namespace LoRaWANContainer.LoRaWan.NetworkServer.Interfaces
 {
     using System.Threading.Tasks;
-    using LoRaTools.LoRaPhysical;
+    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     // Interface for sending downstream messages
     public interface IDownstreamMessageSender

@@ -10,7 +10,6 @@ namespace LoRaWan.NetworkServer
     using LoRaTools;
     using LoRaTools.ADR;
     using LoRaTools.LoRaMessage;
-    using LoRaTools.LoRaPhysical;
     using LoRaTools.Mac;
     using LoRaTools.Regions;
     using LoRaTools.Utils;

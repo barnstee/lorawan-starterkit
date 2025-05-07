@@ -3,7 +3,7 @@
 
 #nullable enable
 
-namespace LoRaWan.NetworkServer.BasicsStation
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
     using System;
     using System.Runtime.Serialization;

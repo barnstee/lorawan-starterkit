@@ -3,126 +3,89 @@
 
 namespace LoRaWan.NetworkServer.BasicsStation
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using LoRaTools.Regions;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using LoRaWANContainer.LoRaWan.NetworkServer.Models;
-    using Microsoft.Extensions.Caching.Memory;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
-    internal sealed class BasicsStationConfigurationService(LoRaDeviceAPIServiceBase loRaDeviceApiService,
-                                             IMemoryCache cache,
-                                             ILogger<BasicsStationConfigurationService> logger) : IBasicsStationConfigurationService, IDisposable
+    internal sealed class BasicsStationConfigurationService() : IBasicsStationConfigurationService
     {
-        internal const string RouterConfigPropertyName = "routerConfig";
-        private const string DwellTimeConfigurationPropertyName = "desiredTxParams";
-        private const string ConcentratorTwinCachePrefixName = "concentratorTwin:";
-        internal const string CupsPropertyName = "cups";
-        internal const string ClientThumbprintPropertyName = "clientThumbprint";
-
-        private static readonly TimeSpan CacheTimeout = TimeSpan.FromHours(2);
-        private readonly SemaphoreSlim cacheSemaphore = new SemaphoreSlim(1);
-
-        public void Dispose() => this.cacheSemaphore.Dispose();
-
-        private async Task<object> GetTwinDesiredPropertiesAsync(StationEui? stationEui, CancellationToken cancellationToken)
+        public Task<string> GetRouterConfigMessageAsync(StationEui stationEui, CancellationToken cancellationToken)
         {
-            var cacheKey = $"{ConcentratorTwinCachePrefixName}{stationEui}";
+            // TODO: Support other routers
+            var routerConfig = "{" +
+                                 "\"msgtype\": \"router_config\"," +
+                                 "\"NetID\": [1]," +
+                                 "\"JoinEui\": [[0,-1]]," +
+                                 "\"region\":\"EU863\"," +
+                                 "\"hwspec\":\"sx1301/1\"," +
+                                 "\"freq_range\": [863000000, 870000000]," +
+                                 "\"DRs\": [" +
+                                 "    [12, 125, 0]," +
+                                 "    [11, 125, 0]," +
+                                 "    [10, 125, 0]," +
+                                 "    [9, 125, 0]," +
+                                 "    [8, 125, 0]," +
+                                 "    [7, 125, 0]," +
+                                 "    [7, 250, 0]" +
+                                 "]," +
+                                 "\"sx1301_conf\": [" +
+                                 "    {" +
+                                 "      \"radio_0\": { \"enable\": true, \"freq\": 867500000 }," +
+                                 "      \"radio_1\": { \"enable\": true, \"freq\": 868500000 }," +
+                                 "      \"chan_FSK\": { \"enable\": true, \"radio\": 1, \"if\": 300000 }," +
+                                 "      \"chan_Lora_std\": {" +
+                                 "        \"enable\": true," +
+                                 "        \"radio\": 1," +
+                                 "        \"if\": -200000," +
+                                 "        \"bandwidth\": 250000," +
+                                 "        \"spread_factor\": 7" +
+                                 "    }," +
+                                 "    \"chan_multiSF_0\": { \"enable\": true, \"radio\": 1, \"if\": -400000 }," +
+                                 "    \"chan_multiSF_1\": { \"enable\": true, \"radio\": 1, \"if\": -200000 }," +
+                                 "    \"chan_multiSF_2\": { \"enable\": true, \"radio\": 1, \"if\": 0 }," +
+                                 "    \"chan_multiSF_3\": { \"enable\": true, \"radio\": 0, \"if\": -400000 }," +
+                                 "    \"chan_multiSF_4\": { \"enable\": true, \"radio\": 0, \"if\": -200000 }," +
+                                 "    \"chan_multiSF_5\": { \"enable\": true, \"radio\": 0, \"if\": 0 }," +
+                                 "    \"chan_multiSF_6\": { \"enable\": true, \"radio\": 0, \"if\": 200000 }," +
+                                 "    \"chan_multiSF_7\": { \"enable\": true, \"radio\": 0, \"if\": 400000 }" +
+                                 "   }" +
+                                 "]," +
+                                 "\"nocca\": true," +
+                                 "\"nodc\": true," +
+                                 "\"nodwell\": true" +
+                               "}";
 
-            if (cache.TryGetValue(cacheKey, out var result))
-                return result;
-
-            await this.cacheSemaphore.WaitAsync(cancellationToken);
-
-            try
-            {
-                return await cache.GetOrCreateAsync<object>(cacheKey, async cacheEntry =>
-                {
-                    _ = cacheEntry.SetAbsoluteExpiration(CacheTimeout);
-                    var key = await loRaDeviceApiService.GetPrimaryKeyByEuiAsync(stationEui);
-                    if (string.IsNullOrEmpty(key))
-                    {
-                        throw new LoRaProcessingException($"The configuration request of station '{stationEui}' did not match any configuration in IoT Hub. If you expect this connection request to succeed, make sure to provision the Basics Station in the device registry.",
-                                                          LoRaProcessingErrorCode.InvalidDeviceConfiguration);
-                    }
-
-                    // TODO: Get desired properties using the key
-                    return null;
-                });
-            }
-            finally
-            {
-                _ = this.cacheSemaphore.Release();
-            }
+            return Task.FromResult(routerConfig);
         }
 
-        public async Task<string> GetRouterConfigMessageAsync(StationEui stationEui, CancellationToken cancellationToken)
+        public Task<Region> GetRegionAsync(StationEui stationEui, CancellationToken cancellationToken)
         {
-            var routerConfig = LnsStationConfiguration.GetConfiguration(await GetDesiredPropertyStringAsync(stationEui, RouterConfigPropertyName, cancellationToken));
-            return JsonConvert.SerializeObject(routerConfig);
+            // default to EU
+            // TODO: Support other regions
+            Region region = new RegionEU868();
+
+            return Task.FromResult(region);
         }
 
-        public async Task<Region> GetRegionAsync(StationEui stationEui, CancellationToken cancellationToken)
+        public Task<CupsTwinInfo> GetCupsConfigAsync(StationEui? stationEui, CancellationToken cancellationToken)
         {
-            var config = await GetRouterConfigMessageAsync(stationEui, cancellationToken);
-            var region = LnsStationConfiguration.GetRegion(config);
-            if (region is DwellTimeLimitedRegion someRegion)
+            // TODO: Replace with real CUPS config
+            CupsTwinInfo cupsTwinInfo = new()
             {
-                var dwellTimeSettings = await GetDesiredPropertyStringAsync(stationEui, DwellTimeConfigurationPropertyName, cancellationToken);
-                someRegion.DesiredDwellTimeSetting = JsonConvert.DeserializeObject<DwellTimeSetting>(dwellTimeSettings);
-            }
-            return region;
-        }
-
-        public async Task<string[]> GetAllowedClientThumbprintsAsync(StationEui stationEui, CancellationToken cancellationToken)
-        {
-            var desiredProperties = await GetTwinDesiredPropertiesAsync(stationEui, cancellationToken);
-            if (desiredProperties.ToString().Contains(ClientThumbprintPropertyName))
-            {
-                try
-                {
-                    var thumbprints = (JArray)desiredProperties;
-                    return thumbprints.ToObject<string[]>();
-                }
-                catch (Exception ex) when (ex is InvalidCastException)
-                {
-                    throw new LoRaProcessingException($"'{ClientThumbprintPropertyName}' format is invalid. An array is expected.", ex, LoRaProcessingErrorCode.InvalidDeviceConfiguration);
-                }
-            }
-
-            throw new LoRaProcessingException($"Property '{ClientThumbprintPropertyName}' was not present in device twin.", LoRaProcessingErrorCode.InvalidDeviceConfiguration);
-        }
-
-        public async Task<CupsTwinInfo> GetCupsConfigAsync(StationEui? stationEui, CancellationToken cancellationToken)
-        {
-            return JsonConvert.DeserializeObject<CupsTwinInfo>(await GetDesiredPropertyStringAsync(stationEui, CupsPropertyName, cancellationToken));
-        }
-
-        private async Task<string> GetDesiredPropertyStringAsync(StationEui? stationEui, string propertyName, CancellationToken cancellationToken)
-        {
-            var desiredProperties = await GetTwinDesiredPropertiesAsync(stationEui, cancellationToken);
-            return desiredProperties.ToString();
-        }
-
-        public async Task SetReportedPackageVersionAsync(StationEui stationEui, string package, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(package))
-            {
-                logger.LogDebug($"Station did not report any 'package' field. Skipping reported property update.");
-                return;
-            }
-
-            var key = await loRaDeviceApiService.GetPrimaryKeyByEuiAsync(stationEui);
-            if (string.IsNullOrEmpty(key))
-            {
-                throw new LoRaProcessingException($"The configuration request of station '{stationEui}' did not match any configuration in IoT Hub. If you expect this connection request to succeed, make sure to provision the Basics Station in the device registry.",
-                                                  LoRaProcessingErrorCode.InvalidDeviceConfiguration);
-            }
-
-            // TODO: persist reported package version using stationEui and key
+                CupsUri = new Uri("https://example.com"),
+                TcUri = new Uri("https://example.com"),
+                CupsCredentialUrl = "https://example.com",
+                TcCredentialUrl = "https://example.com",
+                Package = "example-package",
+                FwKeyChecksum = 1234567890,
+                FwSignatureInBase64 = "example-signature",
+                FwUrl = new Uri("https://example.com"),
+                CupsCredCrc = 1234567890,
+                TcCredCrc = 1234567890,
+            };
+            return Task.FromResult(cupsTwinInfo);
         }
     }
 }

@@ -3,7 +3,9 @@
 
 #nullable enable
 
-namespace LoRaWan.NetworkServer.BasicsStation
+using LoRaWan;
+
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
     using System;
     using System.Collections.Immutable;

@@ -3,7 +3,6 @@
 
 namespace LoRaWan.NetworkServer
 {
-    using LoRaTools.LoRaPhysical;
     using LoRaWANContainer.LoRaWan.NetworkServer.Models;
 
     public class LoRaDeviceRequestProcessResult

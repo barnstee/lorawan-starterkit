@@ -3,12 +3,11 @@
 
 #nullable enable
 
-namespace LoRaTools.LoRaPhysical
+namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
     using System;
-    using LoRaWan;
-    using LoRaWANContainer.LoRaWan.NetworkServer.Models;
-    using Utils;
+    using global::LoRaWan;
+    using LoRaTools.Utils;
 
     /// <summary>
     /// Model class for a Downlink message for the Basic Station.

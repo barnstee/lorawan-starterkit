@@ -113,10 +113,12 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                 case LnsMessageType.Version:
                     var versionMessage = JsonConvert.DeserializeObject<VersionMessage>(json);
                     logger.LogInformation("Received 'version' message for station '{StationVersion}' with package '{StationPackage}'.", versionMessage.MessageType, versionMessage.Package);
-                    await basicsStationConfigurationService.SetReportedPackageVersionAsync(stationEui, versionMessage.Package, cancellationToken);
+
                     var routerConfigResponse = await basicsStationConfigurationService.GetRouterConfigMessageAsync(stationEui, cancellationToken);
                     await socket.SendAsync(routerConfigResponse, cancellationToken);
+
                     break;
+
                 case LnsMessageType.JoinRequest:
                     LogReceivedMessage(logger, "jreq", json, null);
                     try
@@ -139,7 +141,9 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                     {
                         logger.LogInformation("Received unexpected 'jreq' message: {Json}.", json);
                     }
+
                     break;
+
                 case LnsMessageType.UplinkDataFrame:
                     LogReceivedMessage(logger, "updf", json, null);
                     try
@@ -169,24 +173,33 @@ namespace LoRaWan.NetworkServer.BasicsStation.Processors
                     {
                         logger.LogError("Received unexpected 'updf' message: {Json}.", json);
                     }
+
                     break;
+
                 case LnsMessageType.TransmitConfirmation:
                     LogReceivedMessage(logger, "dntxed", json, null);
+
                     break;
+
                 case var messageType and (LnsMessageType.DownlinkMessage or LnsMessageType.RouterConfig):
                     throw new NotSupportedException($"'{messageType}' is not a valid message type for this endpoint and is only valid for 'downstream' messages.");
+
                 case LnsMessageType.TimeSync:
                     var timeSyncData = JsonConvert.DeserializeObject<TimeSyncMessage>(json);
                     LogReceivedMessage(logger, "TimeSync", json, null);
                     timeSyncData.GpsTime = (ulong)DateTime.UtcNow.Subtract(GpsEpoch).TotalMilliseconds * 1000; // to microseconds
                     await socket.SendAsync(JsonConvert.SerializeObject(timeSyncData), cancellationToken);
+
                     break;
+
                 case var messageType and (LnsMessageType.ProprietaryDataFrame
                                           or LnsMessageType.MulticastSchedule
                                           or LnsMessageType.RunCommand
                                           or LnsMessageType.RemoteShell):
                     logger.LogWarning("'{MessageType}' ({MessageTypeBasicStationString}) is not handled in current LoRaWan Network Server implementation.", messageType, messageType.ToBasicStationString());
+
                     break;
+
                 default:
                     throw new SwitchExpressionException();
             }

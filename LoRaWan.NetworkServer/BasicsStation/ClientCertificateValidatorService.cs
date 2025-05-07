@@ -16,10 +16,9 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
 
-    internal sealed partial class ClientCertificateValidatorService(IBasicsStationConfigurationService stationConfigurationService,
-                                             ILogger<ClientCertificateValidatorService> logger) : IClientCertificateValidatorService
+    internal sealed partial class ClientCertificateValidatorService(ILogger<ClientCertificateValidatorService> logger) : IClientCertificateValidatorService
     {
-        public async Task<bool> ValidateAsync(X509Certificate2 certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors, CancellationToken token)
+        public Task<bool> ValidateAsync(X509Certificate2 certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors, CancellationToken token)
         {
             ArgumentNullException.ThrowIfNull(certificate);
             ArgumentNullException.ThrowIfNull(chain);
@@ -31,7 +30,7 @@ namespace LoRaWan.NetworkServer.BasicsStation
             if (!parseSuccess)
             {
                 logger.LogError("Could not find a possible StationEui in '{CommonName}'.", commonName);
-                return false;
+                return Task.FromResult(false);
             }
 
             using var scope = logger.BeginEuiScope(stationEui);
@@ -44,22 +43,10 @@ namespace LoRaWan.NetworkServer.BasicsStation
                     logger.LogError("{Status} {StatusInformation}", status.Status, status.StatusInformation);
                 }
                 logger.LogError("Some errors were found in the chain.");
-                return false;
+                return Task.FromResult(false);
             }
 
-            // Additional validation is done on certificate thumprint
-            try
-            {
-                var thumbprints = await stationConfigurationService.GetAllowedClientThumbprintsAsync(stationEui, token);
-                var thumbprintFound = thumbprints.Any(t => t.Equals(certificate.Thumbprint, StringComparison.OrdinalIgnoreCase));
-                if (!thumbprintFound)
-                    logger.LogDebug($"'{certificate.Thumbprint}' was not found as allowed thumbprint for {stationEui}");
-                return thumbprintFound;
-            }
-            catch (Exception ex) when (ExceptionFilterUtility.False(() => logger.LogError(ex, "An exception occurred while processing requests: {Exception}.", ex)))
-            {
-                return false;
-            }
+            return Task.FromResult(true);
         }
 
         [GeneratedRegex("([a-fA-F0-9]{2}[-:]?){8}")]

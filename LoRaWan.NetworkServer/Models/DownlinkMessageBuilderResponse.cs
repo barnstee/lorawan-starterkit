@@ -5,8 +5,6 @@ using LoRaWan;
 
 namespace LoRaWANContainer.LoRaWan.NetworkServer.Models
 {
-    using LoRaTools.LoRaPhysical;
-
     public class DownlinkMessageBuilderResponse
     {
         internal DownlinkMessage DownlinkMessage { get; set; }
