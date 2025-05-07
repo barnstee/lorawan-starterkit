@@ -8,33 +8,36 @@ namespace LoRaWan.NetworkServer
 
     // Frame counter strategy for multi gateway scenarios
     // Frame Down counters is resolved by calling the LoRa device API. Only a single caller will received a valid frame counter (> 0)
-    public class MultiGatewayFrameCounterUpdateStrategy(string gatewayID, LoRaDeviceAPIServiceBase loRaDeviceAPIService) : ILoRaDeviceFrameCounterUpdateStrategy
+    public class MultiGatewayFrameCounterUpdateStrategy(string gatewayID) : ILoRaDeviceFrameCounterUpdateStrategy
     {
-        public async Task<bool> ResetAsync(LoRaDevice loRaDevice, uint fcntUp, string gatewayId)
+        public Task<bool> ResetAsync(LoRaDevice loRaDevice, uint fcntUp, string gatewayId)
         {
             System.ArgumentNullException.ThrowIfNull(loRaDevice);
 
             loRaDevice.ResetFcnt();
 
-            return await loRaDeviceAPIService.ABPFcntCacheResetAsync(loRaDevice.DevEUI, fcntUp, gatewayId);
+            return Task.FromResult(true);
         }
 
-        public async ValueTask<uint> NextFcntDown(LoRaDevice loRaDevice, uint messageFcnt)
+        public ValueTask<uint> NextFcntDown(LoRaDevice loRaDevice, uint messageFcnt)
         {
             System.ArgumentNullException.ThrowIfNull(loRaDevice);
+            System.ArgumentNullException.ThrowIfNull(gatewayID);
 
-            var result = await loRaDeviceAPIService.NextFCntDownAsync(
-                devEUI: loRaDevice.DevEUI,
-                fcntDown: loRaDevice.FCntDown,
-                fcntUp: messageFcnt,
-                gatewayId: gatewayID);
+            //var result = await loRaDeviceAPIService.NextFCntDownAsync(
+            //    devEUI: loRaDevice.DevEUI,
+            //    fcntDown: loRaDevice.FCntDown,
+            //    fcntUp: messageFcnt,
+            //    gatewayId: gatewayID);
 
-            if (result > 0)
-            {
-                loRaDevice.SetFcntDown(result);
-            }
+            //if (result > 0)
+            //{
+            //    loRaDevice.SetFcntDown(result);
+            //}
 
-            return result;
+            //return result;
+
+            return ValueTask.FromResult(loRaDevice.FCntDown + 1);
         }
 
         public Task<bool> SaveChangesAsync(LoRaDevice loRaDevice)

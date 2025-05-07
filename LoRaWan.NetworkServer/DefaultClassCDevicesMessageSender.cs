@@ -17,7 +17,6 @@ namespace LoRaWan.NetworkServer
         IDownstreamMessageSender downstreamMessageSender,
         ILoRaDeviceFrameCounterUpdateStrategyProvider frameCounterUpdateStrategyProvider,
         ILogger<DefaultClassCDevicesMessageSender> logger,
-        LoRaDeviceAPIServiceBase loRaDeviceAPIService,
         Meter meter) : IClassCDeviceMessageSender
     {
         private readonly Counter<int> c2dMessageTooLong = meter?.CreateCounter<int>(MetricRegistry.C2DMessageTooLong);
@@ -39,7 +38,7 @@ namespace LoRaWan.NetworkServer
                 return false;
             }
 
-            var searchResult = await loRaDeviceAPIService.SearchAndLockForJoinAsync(null, devEui, new DevNonce());
+            var searchResult = SearchDevicesResult.SearchForDevice(null, devEui, new DevNonce());
             if (searchResult == null || searchResult.Devices.Count == 0)
             {
                 logger.LogError($"[class-c] device {message.DevEUI} not found or not joined");

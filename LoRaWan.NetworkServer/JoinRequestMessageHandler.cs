@@ -23,8 +23,6 @@ namespace LoRaWan.NetworkServer
     public class JoinRequestMessageHandler(NetworkServerConfiguration configuration,
                                      IConcentratorDeduplication concentratorDeduplication,
                                      ILogger<JoinRequestMessageHandler> logger,
-                                     LoRaDeviceAPIServiceBase apiService,
-                                     LoRaDeviceAPIServiceBase loRaDeviceAPIService,
                                      Meter meter) : IJoinRequestMessageHandler
     {
         private readonly Counter<int> joinRequestCounter = meter?.CreateCounter<int>(MetricRegistry.JoinRequests);
@@ -38,14 +36,14 @@ namespace LoRaWan.NetworkServer
             _ = Task.Run(() => ProcessJoinRequestAsync(request));
         }
 
-        public async Task<LoRaDevice> GetDeviceForJoinRequestAsync(DevEui devEUI, DevNonce devNonce)
+        public Task<LoRaDevice> GetDeviceForJoinRequestAsync(DevEui devEUI, DevNonce devNonce)
         {
             logger.LogDebug("querying the registry for OTAA device");
 
-            var searchDeviceResult = await loRaDeviceAPIService.SearchAndLockForJoinAsync(
-                gatewayID: configuration.GatewayID,
-                devEUI: devEUI,
-                devNonce: devNonce);
+            var searchDeviceResult = SearchDevicesResult.SearchForDevice(
+                configuration.GatewayID,
+                devEUI,
+                devNonce);
 
             if (searchDeviceResult.IsDevNonceAlreadyUsed)
             {
@@ -72,7 +70,7 @@ namespace LoRaWan.NetworkServer
             }
 
             var matchingDeviceInfo = searchDeviceResult.Devices[0];
-            return new LoRaDevice(null, matchingDeviceInfo.DevEUI);
+            return Task.FromResult(new LoRaDevice(null, matchingDeviceInfo.DevEUI));
         }
 
         internal async Task ProcessJoinRequestAsync(LoRaRequest request)
@@ -308,13 +306,6 @@ namespace LoRaWan.NetworkServer
 
                 this.receiveWindowHits?.Add(1, KeyValuePair.Create(MetricRegistry.ReceiveWindowTagName, (object)windowToUse));
                 _ = request.DownstreamMessageSender.SendDownstreamAsync(downlinkMessage);
-                _ = apiService.SendJoinNotificationAsync(new DeviceJoinNotification
-                {
-                    DevAddr = devAddr,
-                    DevEUI = devEui,
-                    GatewayId = loRaDevice.GatewayID,
-                    NwkSKey = nwkSKey
-                }, joinAcceptCancellationToken.Token);
 
                 request.NotifySucceeded(loRaDevice, downlinkMessage);
 

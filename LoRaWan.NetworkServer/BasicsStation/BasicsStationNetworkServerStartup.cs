@@ -44,17 +44,14 @@ namespace LoRaWan.NetworkServer.BasicsStation
                 .AddSingleton<ILoRaADRStrategyProvider, LoRaADRStrategyProvider>()
                 .AddSingleton<ILoRAADRManagerFactory, LoRAADRManagerFactory>()
                 .AddSingleton<ILoRaPayloadDecoder, LoRaPayloadDecoder>()
-                .AddSingleton<IFunctionBundlerProvider, FunctionBundlerProvider>()
                 .AddSingleton<ILoRaDataRequestHandler, DefaultLoRaDataRequestHandler>()
                 .AddSingleton<IJoinRequestMessageHandler, JoinRequestMessageHandler>()
                 .AddSingleton<IMessageDispatcher, MessageDispatcher>()
                 .AddSingleton<IBasicsStationConfigurationService, BasicsStationConfigurationService>()
                 .AddSingleton<IClassCDeviceMessageSender, DefaultClassCDevicesMessageSender>()
-                .AddSingleton<LoRaDeviceAPIServiceBase, LoRaDeviceAPIService>()
                 .AddSingleton<WebSocketWriterRegistry<StationEui, string>>()
                 .AddSingleton<IDownstreamMessageSender, DownstreamMessageSender>()
                 .AddTransient<ILnsProtocolMessageProcessor, LnsProtocolMessageProcessor>()
-                .AddTransient<ICupsProtocolMessageProcessor, CupsProtocolMessageProcessor>()
                 .AddSingleton<IConcentratorDeduplication, ConcentratorDeduplication>()
                 .AddSingleton(new RegistryMetricTagBag(NetworkServerConfiguration))
                 .AddSingleton(_ => new Meter(MetricRegistry.Namespace, MetricRegistry.Version));
@@ -84,9 +81,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
 
                        Map(HttpMethod.Get, $"{BasicsStationNetworkServer.DataEndpoint}/{{{BasicsStationNetworkServer.RouterIdPathParameterName}:required}}",
                           (ILnsProtocolMessageProcessor processor) => processor.HandleDataAsync);
-
-                       Map(HttpMethod.Post, BasicsStationNetworkServer.UpdateInfoEndpoint,
-                          (ICupsProtocolMessageProcessor processor) => processor.HandleUpdateInfoAsync);
 
                        void Map<TService>(HttpMethod method, string pattern,
                                           Func<TService, Func<HttpContext, CancellationToken, Task>> handlerMapper)

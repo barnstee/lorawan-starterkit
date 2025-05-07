@@ -19,11 +19,6 @@ namespace LoRaWan.NetworkServer
         public string GatewayID { get; set; }
 
         /// <summary>
-        /// Gets or sets the HTTP proxy url.
-        /// </summary>
-        public string HttpsProxy { get; set; }
-
-        /// <summary>
         /// Gets or sets the 2nd receive windows datarate.
         /// </summary>
         public DataRateIndex? Rx2DataRate { get; set; }
@@ -32,16 +27,6 @@ namespace LoRaWan.NetworkServer
         /// Gets or sets the 2nd receive windows data frequency.
         /// </summary>
         public Hertz? Rx2Frequency { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Azure Facade function URL.
-        /// </summary>
-        public Uri FacadeServerUrl { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Azure Facade Function auth code.
-        /// </summary>
-        public string FacadeAuthCode { get; set; }
 
         /// <summary>
         /// Gets or sets  the logging level.
@@ -94,8 +79,6 @@ namespace LoRaWan.NetworkServer
                 }
             }
 
-            config.HttpsProxy = Environment.GetEnvironmentVariable("HTTPS_PROXY");
-            config.FacadeAuthCode = Environment.GetEnvironmentVariable("FACADE_AUTH_CODE");
             config.LnsServerPfxPath = Environment.GetEnvironmentVariable("LNS_SERVER_PFX_PATH");
             config.LnsServerPfxPassword = Environment.GetEnvironmentVariable("LNS_SERVER_PFX_PASSWORD");
 
@@ -112,11 +95,6 @@ namespace LoRaWan.NetworkServer
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RX2_FREQ")))
             {
                 config.Rx2Frequency = double.Parse(Environment.GetEnvironmentVariable("RX2_FREQ"), NumberFormatInfo.InvariantInfo) is { } someFreq ? Hertz.Mega(someFreq) : null;
-            }
-
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FACADE_SERVER_URL")))
-            {
-                config.FacadeServerUrl = new Uri(Environment.GetEnvironmentVariable("FACADE_SERVER_URL"));
             }
 
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NETID")))

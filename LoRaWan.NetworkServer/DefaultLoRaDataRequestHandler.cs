@@ -20,49 +20,21 @@ namespace LoRaWan.NetworkServer
     using Newtonsoft.Json;
     using Constants = LoRaWANContainer.LoRaWan.NetworkServer.Models.Constants;
 
-    public class DefaultLoRaDataRequestHandler : ILoRaDataRequestHandler
+    public class DefaultLoRaDataRequestHandler(
+        NetworkServerConfiguration configuration,
+        ILoRaDeviceFrameCounterUpdateStrategyProvider frameCounterUpdateStrategyProvider,
+        IConcentratorDeduplication concentratorDeduplication,
+        ILoRaPayloadDecoder payloadDecoder,
+        ILoRaADRStrategyProvider loRaADRStrategyProvider,
+        ILoRAADRManagerFactory loRaADRManagerFactory,
+        ILogger<DefaultLoRaDataRequestHandler> logger,
+        Meter meter) : ILoRaDataRequestHandler
     {
-        private readonly NetworkServerConfiguration configuration;
-        private readonly ILoRaDeviceFrameCounterUpdateStrategyProvider frameCounterUpdateStrategyProvider;
-        private readonly IConcentratorDeduplication concentratorDeduplication;
-        private readonly ILoRaPayloadDecoder payloadDecoder;
-        private readonly IDeduplicationStrategyFactory deduplicationFactory;
-        private readonly ILoRaADRStrategyProvider loRaADRStrategyProvider;
-        private readonly ILoRAADRManagerFactory loRaADRManagerFactory;
-        private readonly IFunctionBundlerProvider functionBundlerProvider;
-        private readonly ILogger<DefaultLoRaDataRequestHandler> logger;
-        private readonly Counter<int> receiveWindowMissed;
-        private readonly Counter<int> receiveWindowHits;
-        private readonly Histogram<int> d2cPayloadSizeHistogram;
-        private readonly Counter<int> c2dMessageTooLong;
+        private readonly Counter<int> receiveWindowMissed = meter?.CreateCounter<int>(MetricRegistry.ReceiveWindowMisses);
+        private readonly Counter<int> receiveWindowHits = meter?.CreateCounter<int>(MetricRegistry.ReceiveWindowHits);
+        private readonly Histogram<int> d2cPayloadSizeHistogram = meter?.CreateHistogram<int>(MetricRegistry.D2CMessageSize);
+        private readonly Counter<int> c2dMessageTooLong = meter?.CreateCounter<int>(MetricRegistry.C2DMessageTooLong);
         private IClassCDeviceMessageSender classCDeviceMessageSender;
-
-        public DefaultLoRaDataRequestHandler(
-            NetworkServerConfiguration configuration,
-            ILoRaDeviceFrameCounterUpdateStrategyProvider frameCounterUpdateStrategyProvider,
-            IConcentratorDeduplication concentratorDeduplication,
-            ILoRaPayloadDecoder payloadDecoder,
-            IDeduplicationStrategyFactory deduplicationFactory,
-            ILoRaADRStrategyProvider loRaADRStrategyProvider,
-            ILoRAADRManagerFactory loRaADRManagerFactory,
-            IFunctionBundlerProvider functionBundlerProvider,
-            ILogger<DefaultLoRaDataRequestHandler> logger,
-            Meter meter)
-        {
-            this.configuration = configuration;
-            this.frameCounterUpdateStrategyProvider = frameCounterUpdateStrategyProvider;
-            this.concentratorDeduplication = concentratorDeduplication;
-            this.payloadDecoder = payloadDecoder;
-            this.deduplicationFactory = deduplicationFactory;
-            this.loRaADRStrategyProvider = loRaADRStrategyProvider;
-            this.loRaADRManagerFactory = loRaADRManagerFactory;
-            this.functionBundlerProvider = functionBundlerProvider;
-            this.logger = logger;
-            this.receiveWindowMissed = meter?.CreateCounter<int>(MetricRegistry.ReceiveWindowMisses);
-            this.receiveWindowHits = meter?.CreateCounter<int>(MetricRegistry.ReceiveWindowHits);
-            this.d2cPayloadSizeHistogram = meter?.CreateHistogram<int>(MetricRegistry.D2CMessageSize);
-            this.c2dMessageTooLong = meter?.CreateCounter<int>(MetricRegistry.C2DMessageTooLong);
-        }
 
         private sealed class ProcessingState
         {
@@ -119,7 +91,7 @@ namespace LoRaWan.NetworkServer
                     };
 
                     if (exception is { } someException)
-                        this.logger.LogError(someException, "Processing of secondary tasks failed.");
+                        logger.LogError(someException, "Processing of secondary tasks failed.");
                 }
             }
         }
@@ -135,23 +107,23 @@ namespace LoRaWan.NetworkServer
             var payloadFcnt = loraPayload.Fcnt;
 
             var payloadFcntAdjusted = LoRaPayloadData.InferUpper32BitsForClientFcnt(payloadFcnt, loRaDevice.FCntUp);
-            this.logger.LogDebug($"converted 16bit FCnt {payloadFcnt} to 32bit FCnt {payloadFcntAdjusted}");
+            logger.LogDebug($"converted 16bit FCnt {payloadFcnt} to 32bit FCnt {payloadFcntAdjusted}");
 
             var requiresConfirmation = loraPayload.RequiresConfirmation;
 
             LoRaADRResult loRaADRResult = null;
 
-            var frameCounterStrategy = this.frameCounterUpdateStrategyProvider.GetStrategy(loRaDevice.GatewayID);
+            var frameCounterStrategy = frameCounterUpdateStrategyProvider.GetStrategy(loRaDevice.GatewayID);
             if (frameCounterStrategy == null)
             {
-                this.logger.LogError($"failed to resolve frame count update strategy, device gateway: {loRaDevice.GatewayID}, message ignored");
+                logger.LogError($"failed to resolve frame count update strategy, device gateway: {loRaDevice.GatewayID}, message ignored");
                 return new LoRaDeviceRequestProcessResult(loRaDevice, request, LoRaDeviceRequestFailedReason.ApplicationError);
             }
 
             ReceivedLoRaCloudToDeviceMessage cloudToDeviceMessage = null;
 
             var skipDownstreamToAvoidCollisions = false;
-            var concentratorDeduplicationResult = this.concentratorDeduplication.CheckDuplicateData(request, loRaDevice);
+            var concentratorDeduplicationResult = concentratorDeduplication.CheckDuplicateData(request, loRaDevice);
             if (concentratorDeduplicationResult is ConcentratorDeduplicationResult.Duplicate)
             {
                 return new LoRaDeviceRequestProcessResult(loRaDevice, request, LoRaDeviceRequestFailedReason.DeduplicationDrop);
@@ -187,14 +159,16 @@ namespace LoRaWan.NetworkServer
                                                        or ConcentratorDeduplicationResult.DuplicateDueToResubmission)
                 {
                     // in the case of resubmissions we need to contact the function to get a valid frame counter down
-                    if (CreateBundler(loraPayload, loRaDevice, request) is { } bundler)
-                    {
-                        if (loRaDevice.IsConnectionOwner is false && IsProcessingDelayEnabled())
-                        {
-                            await DelayProcessing();
-                        }
-                        bundlerResult = await TryUseBundler(bundler, loRaDevice);
-                    }
+                    throw new NotImplementedException("Azure Function is not supported anymore!");
+
+                    //if (CreateBundler(loraPayload, loRaDevice, request) is { } bundler)
+                    //{
+                    //    if (loRaDevice.IsConnectionOwner is false && IsProcessingDelayEnabled())
+                    //    {
+                    //        await DelayProcessing();
+                    //    }
+                    //    bundlerResult = await TryUseBundler(bundler, loRaDevice);
+                    //}
                 }
                 #endregion
 
@@ -208,7 +182,7 @@ namespace LoRaWan.NetworkServer
                 #region ADR
                 if (loraPayload.IsAdrAckRequested)
                 {
-                    this.logger.LogDebug("ADR ack request received");
+                    logger.LogDebug("ADR ack request received");
                 }
 
                 // ADR should be performed before the gateway deduplication as we still want to collect the signal info,
@@ -237,7 +211,7 @@ namespace LoRaWan.NetworkServer
                             loRaDevice.CloseConnection(CancellationToken.None);
                         }
                         // duplication strategy is indicating that we do not need to continue processing this message
-                        this.logger.LogDebug($"duplication strategy indicated to not process message: {payloadFcnt}");
+                        logger.LogDebug($"duplication strategy indicated to not process message: {payloadFcnt}");
                         return new LoRaDeviceRequestProcessResult(loRaDevice, request, LoRaDeviceRequestFailedReason.DeduplicationDrop);
                     }
                 }
@@ -286,7 +260,7 @@ namespace LoRaWan.NetworkServer
                 {
                     if (!isConfirmedResubmit)
                     {
-                        this.logger.LogDebug($"valid frame counter, msg: {payloadFcntAdjusted} server: {loRaDevice.FCntUp}");
+                        logger.LogDebug($"valid frame counter, msg: {payloadFcntAdjusted} server: {loRaDevice.FCntUp}");
                     }
 
                     object payloadData = null;
@@ -302,7 +276,7 @@ namespace LoRaWan.NetworkServer
                         }
                         catch (LoRaProcessingException ex) when (ex.ErrorCode == LoRaProcessingErrorCode.PayloadDecryptionFailed)
                         {
-                            this.logger.LogError(ex.ToString());
+                            logger.LogError(ex.ToString());
                         }
                     }
 
@@ -311,14 +285,14 @@ namespace LoRaWan.NetworkServer
                     // otherwise the commands are in FOpts field and already parsed
                     if (loraPayload.Fport == FramePort.MacCommand && decryptedPayloadData?.Length > 0)
                     {
-                        loraPayload.MacCommands = MacCommand.CreateMacCommandFromBytes(decryptedPayloadData, this.logger);
+                        loraPayload.MacCommands = MacCommand.CreateMacCommandFromBytes(decryptedPayloadData, logger);
                     }
 
                     if (loraPayload.MacCommands is { Count: > 0 } macCommands)
                     {
                         foreach (var macCommand in macCommands)
                         {
-                            this.logger.LogDebug($"{macCommand.Cid} mac command detected in upstream payload: {macCommand}");
+                            logger.LogDebug($"{macCommand.Cid} mac command detected in upstream payload: {macCommand}");
                         }
                     }
 
@@ -346,12 +320,12 @@ namespace LoRaWan.NetworkServer
                             }
                             else
                             {
-                                this.logger.LogDebug("Received 'TxParamSetupAns' even though reported dwell time settings match desired dwell time settings.");
+                                logger.LogDebug("Received 'TxParamSetupAns' even though reported dwell time settings match desired dwell time settings.");
                             }
                         }
                         else
                         {
-                            this.logger.LogWarning("Received 'TxParamSetupAns' in region '{Region}' which does not support dwell limitations.", request.Region.LoRaRegion);
+                            logger.LogWarning("Received 'TxParamSetupAns' in region '{Region}' which does not support dwell limitations.", request.Region.LoRaRegion);
                         }
                     }
 
@@ -360,13 +334,13 @@ namespace LoRaWan.NetworkServer
                     {
                         if (string.IsNullOrEmpty(loRaDevice.SensorDecoder))
                         {
-                            this.logger.LogDebug($"no decoder set in device twin. port: {(byte)payloadPort}");
+                            logger.LogDebug($"no decoder set in device twin. port: {(byte)payloadPort}");
                             payloadData = new UndecodedPayload(decryptedPayloadData);
                         }
                         else
                         {
-                            this.logger.LogDebug($"decoding with: {loRaDevice.SensorDecoder} port: {(byte)payloadPort}");
-                            var decodePayloadResult = await this.payloadDecoder.DecodeMessageAsync(loRaDevice.DevEUI, decryptedPayloadData, payloadPort, loRaDevice.SensorDecoder);
+                            logger.LogDebug($"decoding with: {loRaDevice.SensorDecoder} port: {(byte)payloadPort}");
+                            var decodePayloadResult = await payloadDecoder.DecodeMessageAsync(loRaDevice.DevEUI, decryptedPayloadData, payloadPort, loRaDevice.SensorDecoder);
                             payloadData = decodePayloadResult.GetDecodedPayload();
 
                             if (decodePayloadResult.CloudToDeviceMessage != null)
@@ -404,7 +378,7 @@ namespace LoRaWan.NetworkServer
                         && loRaDevice.ReportedDwellTimeSetting != someDwellTimeLimitedRegion.DesiredDwellTimeSetting
                         && cloudToDeviceMessage == null)
                     {
-                        this.logger.LogDebug("Preparing 'TxParamSetupReq' MAC command downstream.");
+                        logger.LogDebug("Preparing 'TxParamSetupReq' MAC command downstream.");
                         // put the MAC command into a C2D message.
                         cloudToDeviceMessage = new ReceivedLoRaCloudToDeviceMessage() { MacCommands = { new TxParamSetupRequest(someDwellTimeLimitedRegion.DesiredDwellTimeSetting) } };
                         fcntDown = await EnsureHasFcntDownAsync(loRaDevice, fcntDown, payloadFcntAdjusted, frameCounterStrategy);
@@ -433,7 +407,7 @@ namespace LoRaWan.NetworkServer
                 #region Downstream
                 if (skipDownstreamToAvoidCollisions)
                 {
-                    this.logger.LogDebug($"skipping downstream messages due to deduplication ({timeWatcher.GetElapsedTime()})");
+                    logger.LogDebug($"skipping downstream messages due to deduplication ({timeWatcher.GetElapsedTime()})");
                     return new LoRaDeviceRequestProcessResult(loRaDevice, request);
                 }
 
@@ -445,7 +419,7 @@ namespace LoRaWan.NetworkServer
                     if (requiresConfirmation)
                     {
                         this.receiveWindowMissed?.Add(1);
-                        this.logger.LogInformation($"too late for down message ({timeWatcher.GetElapsedTime()})");
+                        logger.LogInformation($"too late for down message ({timeWatcher.GetElapsedTime()})");
                     }
 
                     return new LoRaDeviceRequestProcessResult(loRaDevice, request);
@@ -457,7 +431,7 @@ namespace LoRaWan.NetworkServer
                 if (requiresConfirmation && (!loRaDevice.DownlinkEnabled || timeToSecondWindow.Subtract(LoRaOperationTimeWatcher.ExpectedTimeToPackageAndSendMessage) <= LoRaOperationTimeWatcher.MinimumAvailableTimeToCheckForCloudMessage))
                 {
                     var downlinkMessageBuilderResp = DownlinkMessageBuilder.CreateDownlinkMessage(
-                        this.configuration,
+                        configuration,
                         loRaDevice,
                         request,
                         timeWatcher,
@@ -465,7 +439,7 @@ namespace LoRaWan.NetworkServer
                         false, // fpending
                         fcntDown.GetValueOrDefault(),
                         loRaADRResult,
-                        this.logger);
+                        logger);
 
                     if (downlinkMessageBuilderResp.DownlinkMessage != null)
                     {
@@ -553,13 +527,13 @@ namespace LoRaWan.NetworkServer
                     if (confirmDownlinkMessageBuilderResp.DownlinkMessage == null)
                     {
                         this.receiveWindowMissed?.Add(1);
-                        this.logger.LogInformation($"out of time for downstream message, will abandon cloud to device message id: {cloudToDeviceMessage.MessageId ?? "undefined"}");
+                        logger.LogInformation($"out of time for downstream message, will abandon cloud to device message id: {cloudToDeviceMessage.MessageId ?? "undefined"}");
                         state.Track(cloudToDeviceMessage.AbandonAsync());
                     }
                     else if (confirmDownlinkMessageBuilderResp.IsMessageTooLong)
                     {
                         this.c2dMessageTooLong?.Add(1);
-                        this.logger.LogError($"payload will not fit in current receive window, will abandon cloud to device message id: {cloudToDeviceMessage.MessageId ?? "undefined"}");
+                        logger.LogError($"payload will not fit in current receive window, will abandon cloud to device message id: {cloudToDeviceMessage.MessageId ?? "undefined"}");
                         state.Track(cloudToDeviceMessage.AbandonAsync());
                     }
                     else
@@ -591,7 +565,7 @@ namespace LoRaWan.NetworkServer
             _ = timeWatcher ?? throw new ArgumentNullException(nameof(timeWatcher));
 
             return DownlinkMessageBuilder.CreateDownlinkMessage(
-                this.configuration,
+                configuration,
                 loRaDevice,
                 request,
                 timeWatcher,
@@ -599,7 +573,7 @@ namespace LoRaWan.NetworkServer
                 fpending,
                 fcntDown.GetValueOrDefault(),
                 loRaADRResult,
-                this.logger);
+                logger);
         }
 
         protected virtual Task SendMessageDownstreamAsync(LoRaRequest request, DownlinkMessageBuilderResponse confirmDownlinkMessageBuilderResp)
@@ -625,11 +599,11 @@ namespace LoRaWan.NetworkServer
             var preferredGatewayResult = bundlerResult.PreferredGatewayResult;
             if (preferredGatewayResult.IsSuccessful())
             {
-                var currentIsPreferredGateway = bundlerResult.PreferredGatewayResult.PreferredGatewayID == this.configuration.GatewayID;
+                var currentIsPreferredGateway = bundlerResult.PreferredGatewayResult.PreferredGatewayID == configuration.GatewayID;
 
                 var preferredGatewayChanged = bundlerResult.PreferredGatewayResult.PreferredGatewayID != loRaDevice.PreferredGatewayID;
                 if (preferredGatewayChanged)
-                    this.logger.LogDebug($"preferred gateway changed from '{loRaDevice.PreferredGatewayID}' to '{preferredGatewayResult.PreferredGatewayID}'");
+                    logger.LogDebug($"preferred gateway changed from '{loRaDevice.PreferredGatewayID}' to '{preferredGatewayResult.PreferredGatewayID}'");
 
                 if (preferredGatewayChanged)
                 {
@@ -644,7 +618,7 @@ namespace LoRaWan.NetworkServer
             }
             else
             {
-                this.logger.LogError($"failed to resolve preferred gateway: {preferredGatewayResult}");
+                logger.LogError($"failed to resolve preferred gateway: {preferredGatewayResult}");
             }
         }
 
@@ -654,7 +628,7 @@ namespace LoRaWan.NetworkServer
         {
             if (!cloudToDeviceMsg.IsValid(out var errorMessage))
             {
-                this.logger.LogError(errorMessage);
+                logger.LogError(errorMessage);
                 return false;
             }
 
@@ -666,7 +640,7 @@ namespace LoRaWan.NetworkServer
             if (loRaDevice.PreferredWindow == ReceiveWindowNumber.ReceiveWindow2)
             {
                 // Get max. payload size for RX2, considering possible user provided Rx2DataRate
-                if (this.configuration.Rx2DataRate is null)
+                if (configuration.Rx2DataRate is null)
                 {
                     var deviceJoinInfo = loRaRegion.LoRaRegion == LoRaRegionType.CN470RP2
                         ? new DeviceJoinInfo(loRaDevice.ReportedCN470JoinChannel, loRaDevice.DesiredCN470JoinChannel)
@@ -677,7 +651,7 @@ namespace LoRaWan.NetworkServer
                 }
                 else
                 {
-                    maxPayload = loRaRegion.GetMaxPayloadSize(this.configuration.Rx2DataRate.Value);
+                    maxPayload = loRaRegion.GetMaxPayloadSize(configuration.Rx2DataRate.Value);
                 }
             }
 
@@ -706,7 +680,7 @@ namespace LoRaWan.NetworkServer
             // This message can never be delivered.
             if (totalPayload > maxPayload)
             {
-                this.logger.LogError($"message payload size ({totalPayload}) exceeds maximum allowed payload size ({maxPayload}) in cloud to device message");
+                logger.LogError($"message payload size ({totalPayload}) exceeds maximum allowed payload size ({maxPayload}) in cloud to device message");
                 return false;
             }
 
@@ -723,7 +697,7 @@ namespace LoRaWan.NetworkServer
             var deviceTelemetry = new LoRaDeviceTelemetry(request, loRaPayloadData, decodedValue, decryptedPayloadData)
             {
                 DeviceEUI = loRaDevice.DevEUI.ToString(),
-                GatewayID = this.configuration.GatewayID,
+                GatewayID = configuration.GatewayID,
                 Edgets = (long)(timeWatcher.Start - DateTime.UnixEpoch).TotalMilliseconds
             };
 
@@ -736,7 +710,7 @@ namespace LoRaWan.NetworkServer
             if (loRaPayloadData.IsUpwardAck)
             {
                 eventProperties = new Dictionary<string, string>();
-                this.logger.LogInformation($"message ack received for cloud to device message id {loRaDevice.LastConfirmedC2DMessageID}");
+                logger.LogInformation($"message ack received for cloud to device message id {loRaDevice.LastConfirmedC2DMessageID}");
                 eventProperties.Add(Constants.C2D_MSG_PROPERTY_VALUE_NAME, loRaDevice.LastConfirmedC2DMessageID ?? Constants.C2D_MSG_ID_PLACEHOLDER);
                 loRaDevice.LastConfirmedC2DMessageID = null;
             }
@@ -790,11 +764,11 @@ namespace LoRaWan.NetworkServer
 
             if (newFcntDown <= 0)
             {
-                this.logger.LogDebug("another gateway has already sent ack or downlink msg");
+                logger.LogDebug("another gateway has already sent ack or downlink msg");
             }
             else
             {
-                this.logger.LogDebug($"down frame counter: {loRaDevice.FCntDown}");
+                logger.LogDebug($"down frame counter: {loRaDevice.FCntDown}");
             }
         }
 
@@ -824,28 +798,9 @@ namespace LoRaWan.NetworkServer
             return result;
         }
 
-        protected virtual FunctionBundler CreateBundler(LoRaPayloadData loraPayload, LoRaDevice loRaDevice, LoRaRequest request)
-            => this.functionBundlerProvider.CreateIfRequired(this.configuration.GatewayID, loraPayload, loRaDevice, this.deduplicationFactory, request);
+        internal virtual bool IsProcessingDelayEnabled() => configuration.ProcessingDelayInMilliseconds > 0;
 
-        internal virtual bool IsProcessingDelayEnabled() => this.configuration.ProcessingDelayInMilliseconds > 0;
-
-        protected virtual async Task DelayProcessing() => await Task.Delay(TimeSpan.FromMilliseconds(this.configuration.ProcessingDelayInMilliseconds));
-
-        protected virtual async Task<FunctionBundlerResult> TryUseBundler(FunctionBundler bundler, LoRaDevice loRaDevice)
-        {
-            ArgumentNullException.ThrowIfNull(bundler, nameof(bundler));
-            ArgumentNullException.ThrowIfNull(loRaDevice, nameof(loRaDevice));
-
-            var bundlerResult = await bundler.Execute();
-            if (bundlerResult.NextFCntDown is { } nextFCntDown)
-            {
-                // we got a new framecounter down. Make sure this
-                // gets saved eventually to the twins
-                loRaDevice.SetFcntDown(nextFCntDown);
-            }
-
-            return bundlerResult;
-        }
+        protected virtual async Task DelayProcessing() => await Task.Delay(TimeSpan.FromMilliseconds(configuration.ProcessingDelayInMilliseconds));
 
         protected virtual async Task<LoRaADRResult> PerformADR(LoRaRequest request, LoRaDevice loRaDevice, LoRaPayloadData loraPayload, uint payloadFcnt, LoRaADRResult loRaADRResult, ILoRaDeviceFrameCounterUpdateStrategy frameCounterStrategy)
         {
@@ -853,13 +808,13 @@ namespace LoRaWan.NetworkServer
             _ = request ?? throw new ArgumentNullException(nameof(request));
             _ = loraPayload ?? throw new ArgumentNullException(nameof(loraPayload));
 
-            var loRaADRManager = this.loRaADRManagerFactory.Create(this.loRaADRStrategyProvider, frameCounterStrategy, loRaDevice);
+            var loRaADRManager = loRaADRManagerFactory.Create(loRaADRStrategyProvider, frameCounterStrategy, loRaDevice);
 
             var loRaADRTableEntry = new LoRaADRTableEntry()
             {
                 DevEUI = loRaDevice.DevEUI,
                 FCnt = payloadFcnt,
-                GatewayId = this.configuration.GatewayID,
+                GatewayId = configuration.GatewayID,
                 Snr = request.RadioMetadata.UpInfo.SignalNoiseRatio
             };
 
@@ -872,7 +827,7 @@ namespace LoRaWan.NetworkServer
             {
                 loRaADRResult = await loRaADRManager.CalculateADRResultAndAddEntryAsync(
                     loRaDevice.DevEUI,
-                    this.configuration.GatewayID,
+                    configuration.GatewayID,
                     payloadFcnt,
                     loRaDevice.FCntDown,
                     (float)request.Region.RequiredSnr(request.RadioMetadata.DataRate),
@@ -880,7 +835,7 @@ namespace LoRaWan.NetworkServer
                     request.Region.TXPowertoMaxEIRP.Count - 1,
                     request.Region.MaxADRDataRate,
                     loRaADRTableEntry);
-                this.logger.LogDebug("device sent ADR ack request, computing an answer");
+                logger.LogDebug("device sent ADR ack request, computing an answer");
             }
 
             return loRaADRResult;
@@ -907,12 +862,12 @@ namespace LoRaWan.NetworkServer
                 {
                     if (!loRaDevice.ValidateConfirmResubmit(payloadFcnt))
                     {
-                        this.logger.LogError($"resubmit from confirmed message exceeds threshold of {LoRaDevice.MaxConfirmationResubmitCount}, message ignored, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
+                        logger.LogError($"resubmit from confirmed message exceeds threshold of {LoRaDevice.MaxConfirmationResubmitCount}, message ignored, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
                         return LoRaDeviceRequestFailedReason.ConfirmationResubmitThresholdExceeded;
                     }
 
                     isConfirmedResubmit = true;
-                    this.logger.LogInformation($"resubmit from confirmed message detected, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
+                    logger.LogInformation($"resubmit from confirmed message detected, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
                 }
                 else if (payloadFcnt == loRaDevice.FCntUp && concentratorDeduplicationResult == ConcentratorDeduplicationResult.SoftDuplicateDueToDeduplicationStrategy)
                 {
@@ -921,7 +876,7 @@ namespace LoRaWan.NetworkServer
                 }
                 else
                 {
-                    this.logger.LogDebug($"invalid frame counter, message ignored, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
+                    logger.LogDebug($"invalid frame counter, message ignored, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
                     return LoRaDeviceRequestFailedReason.InvalidFrameCounter;
                 }
             }
@@ -932,7 +887,7 @@ namespace LoRaWan.NetworkServer
 
             if (diff > Constants.MaxFcntGap)
             {
-                this.logger.LogError($"invalid frame counter (diverges too much), message ignored, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
+                logger.LogError($"invalid frame counter (diverges too much), message ignored, msg: {payloadFcnt} server: {loRaDevice.FCntUp}");
                 return LoRaDeviceRequestFailedReason.InvalidFrameCounter;
             }
 
@@ -960,7 +915,7 @@ namespace LoRaWan.NetworkServer
                         // fcnt down calculations
                         if (concentratorDeduplicationResult is ConcentratorDeduplicationResult.NotDuplicate)
                         {
-                            _ = await frameCounterStrategy.ResetAsync(loRaDevice, payloadFcnt, this.configuration.GatewayID);
+                            _ = await frameCounterStrategy.ResetAsync(loRaDevice, payloadFcnt, configuration.GatewayID);
                         }
                         isFrameCounterFromNewlyStartedDevice = true;
                     }

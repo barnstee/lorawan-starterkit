@@ -9,7 +9,7 @@ namespace LoRaWan.NetworkServer.ADR
     using System;
     using System.Threading;
 
-    public class LoRAADRManagerFactory(LoRaDeviceAPIServiceBase loRaDeviceAPIService, ILoggerFactory loggerFactory) : ILoRAADRManagerFactory
+    public class LoRAADRManagerFactory(ILoggerFactory loggerFactory) : ILoRAADRManagerFactory
     {
         private static readonly Lock InMemoryStoreLock = new Lock();
         private static volatile LoRaADRInMemoryStore inMemoryStore;
@@ -22,7 +22,7 @@ namespace LoRaWan.NetworkServer.ADR
 
             return !string.IsNullOrEmpty(loRaDevice.GatewayID)
                     ? new LoRaADRDefaultManager(CurrentInMemoryStore, strategyProvider, frameCounterStrategy, loRaDevice, loggerFactory.CreateLogger<LoRaADRDefaultManager>())
-                    : new LoRaADRMultiGatewayManager(loRaDevice, loRaDeviceAPIService, loggerFactory.CreateLogger<LoRaADRMultiGatewayManager>());
+                    : new LoRaADRMultiGatewayManager(loRaDevice, loggerFactory.CreateLogger<LoRaADRMultiGatewayManager>());
         }
 
         private static LoRaADRInMemoryStore CurrentInMemoryStore
