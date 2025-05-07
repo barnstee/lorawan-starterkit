@@ -5,7 +5,6 @@ namespace LoRaTools.Regions
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Configuration;
     using LoRaTools.Utils;
     using LoRaWan;
     using static LoRaWan.DataRateIndex;

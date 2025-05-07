@@ -3,10 +3,10 @@
 
 namespace LoRaTools.Regions
 {
-    using LoRaTools.Utils;
-    using LoRaWan;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using LoRaTools.Utils;
+    using LoRaWan;
     using static LoRaWan.DataRateIndex;
     using static LoRaWan.Metric;
 
