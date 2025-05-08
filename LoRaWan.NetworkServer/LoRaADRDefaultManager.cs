@@ -1,37 +1,28 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer.ADR
+namespace LoRaWANContainer.LoRaWan.NetworkServer
 {
     using System.Threading.Tasks;
+    using global::LoRaWan;
+    using global::LoRaWan.NetworkServer;
     using LoRaTools.ADR;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.Extensions.Logging;
 
-    public class LoRaADRDefaultManager : LoRaADRManagerBase
+    public class LoRaADRDefaultManager(ILoRaADRStore store, ILoRaADRStrategyProvider strategyProvider, ILoRaDeviceFrameCounterUpdateStrategy frameCounterStrategy, LoRaDevice loRaDevice, ILogger<LoRaADRDefaultManager> logger) : LoRaADRManagerBase(store, strategyProvider, logger)
     {
-        protected LoRaDevice LoRaDevice { get; private set; }
-
-        private readonly ILoRaDeviceFrameCounterUpdateStrategy frameCounterStrategy;
-
-        public LoRaADRDefaultManager(ILoRaADRStore store, ILoRaADRStrategyProvider strategyProvider, ILoRaDeviceFrameCounterUpdateStrategy frameCounterStrategy, LoRaDevice loRaDevice, ILogger<LoRaADRDefaultManager> logger)
-            : base(store, strategyProvider, logger)
-        {
-            LoRaDevice = loRaDevice;
-            this.frameCounterStrategy = frameCounterStrategy;
-        }
+        protected LoRaDevice LoRaDevice { get; private set; } = loRaDevice;
 
         protected override void UpdateState(LoRaADRResult loRaADRResult)
         {
             if (loRaADRResult != null)
-            {
                 LoRaDevice.UpdatedADRProperties(loRaADRResult.DataRate, loRaADRResult.TxPower.GetValueOrDefault(), loRaADRResult.NbRepetition.GetValueOrDefault());
-            }
         }
 
         public override Task<uint> NextFCntDown(DevEui devEUI, string gatewayId, uint clientFCntUp, uint clientFCntDown)
         {
-            return this.frameCounterStrategy.NextFcntDown(LoRaDevice, clientFCntUp).AsTask();
+            return frameCounterStrategy.NextFcntDown(LoRaDevice, clientFCntUp).AsTask();
             // update twins
         }
     }

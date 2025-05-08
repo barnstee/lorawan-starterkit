@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer.ADR
+using LoRaWan.NetworkServer;
+
+namespace LoRaWANContainer.LoRaWan.NetworkServer
 {
     using LoRaTools.ADR;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
@@ -30,9 +32,7 @@ namespace LoRaWan.NetworkServer.ADR
             get
             {
                 if (inMemoryStore != null)
-                {
                     return inMemoryStore;
-                }
 
                 lock (InMemoryStoreLock)
                 {
@@ -40,10 +40,7 @@ namespace LoRaWan.NetworkServer.ADR
 #pragma warning disable CA1508 // Avoid dead conditional code
                     // False positive.
                     if (inMemoryStore == null)
-#pragma warning restore CA1508 // Avoid dead conditional code
-                    {
                         inMemoryStore = new LoRaADRInMemoryStore();
-                    }
 #pragma warning restore IDE0074 // Use compound assignment
                 }
 

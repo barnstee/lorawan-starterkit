@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace LoRaWan.NetworkServer.ADR
+namespace LoRaWANContainer.LoRaWan.NetworkServer
 {
     using System.Threading.Tasks;
+    using global::LoRaWan;
+    using global::LoRaWan.NetworkServer;
     using LoRaTools.ADR;
     using Microsoft.Extensions.Logging;
 
@@ -12,7 +14,7 @@ namespace LoRaWan.NetworkServer.ADR
         public override Task<bool> ResetAsync(DevEui devEUI)
         {
             // needs to be called on the function bundler
-            return Task.FromResult<bool>(false);
+            return Task.FromResult(false);
         }
 
         public override Task StoreADREntryAsync(LoRaADRTableEntry newEntry)

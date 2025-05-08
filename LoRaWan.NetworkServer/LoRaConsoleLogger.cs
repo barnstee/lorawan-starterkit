@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #nullable enable
 
-namespace LoRaWan.NetworkServer.Logger
+namespace LoRaWANContainer.LoRaWan.NetworkServer
 {
     using System;
     using System.Collections.Concurrent;
@@ -76,9 +76,7 @@ namespace LoRaWan.NetworkServer.Logger
             _ = formatter ?? throw new ArgumentNullException(nameof(formatter));
 
             if (!IsEnabled(logLevel))
-            {
                 return;
-            }
 
             var configuredEventId = this.provider.EventId;
 
@@ -88,9 +86,7 @@ namespace LoRaWan.NetworkServer.Logger
                 formattedMessage = LoggerHelper.AddScopeInformation(this.provider.LoggerConfigurationMonitor.ScopeProvider, formattedMessage);
 
                 if (logLevel == LogLevel.Error)
-                {
                     ConsoleWriteError(formattedMessage);
-                }
                 else
                 {
                     ConsoleWrite(formattedMessage);

@@ -3,7 +3,9 @@
 
 #nullable enable
 
-namespace LoRaWan.NetworkServer.Logger
+using LoRaWan;
+
+namespace LoRaWANContainer.LoRaWan.NetworkServer
 {
     using System;
     using System.Diagnostics.CodeAnalysis;

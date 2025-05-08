@@ -6,12 +6,11 @@ namespace LoRaWan.NetworkServer.BasicsStation
     using System;
     using System.Diagnostics.Metrics;
     using System.Globalization;
-    using Logger;
     using LoRaTools.ADR;
     using LoRaWan;
     using LoRaWan.NetworkServer;
-    using LoRaWan.NetworkServer.ADR;
     using LoRaWan.NetworkServer.BasicsStation.Processors;
+    using LoRaWANContainer.LoRaWan.NetworkServer;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Server.Kestrel.Https;
