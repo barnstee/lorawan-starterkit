@@ -45,27 +45,31 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="LoRaWan\Eui.g.tt">
+    <None Update="LoRaWanNetworkServer\Models\Eui.g.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Eui.g.cs</LastGenOutput>
     </None>
-    <None Update="LoRaWan\Keys.g.tt">
+    <None Update="LoRaWanNetworkServer\Models\Keys.g.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Keys.g.cs</LastGenOutput>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="LoRaWan\Eui.g.cs">
+    <Compile Update="LoRaWanNetworkServer\Models\Eui.g.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Eui.g.tt</DependentUpon>
     </Compile>
-    <Compile Update="LoRaWan\Keys.g.cs">
+    <Compile Update="LoRaWanNetworkServer\Models\Keys.g.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Keys.g.tt</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
 </Project>
