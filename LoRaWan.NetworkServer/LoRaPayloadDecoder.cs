@@ -3,138 +3,35 @@
 
 namespace LoRaWan.NetworkServer
 {
-    using System;
-    using System.Collections.Generic;
     using System.Globalization;
-    using System.Net.Http;
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
-    using System.Web;
     using LoRaWANContainer.LoRaWan.NetworkServer.Interfaces;
     using LoRaWANContainer.LoRaWan.NetworkServer.Models;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Logging;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// LoRa payload decoder.
     /// </summary>
-    public sealed class LoRaPayloadDecoder : ILoRaPayloadDecoder
+    public sealed class LoRaPayloadDecoder() : ILoRaPayloadDecoder
     {
-        private readonly IHttpClientFactory httpClientFactory;
-        private readonly ILogger<LoRaPayloadDecoder> logger;
-
-        public LoRaPayloadDecoder(IHttpClientFactory httpClientFactory, ILogger<LoRaPayloadDecoder> logger)
-        {
-            this.httpClientFactory = httpClientFactory;
-            this.logger = logger;
-        }
-
-        public async ValueTask<DecodePayloadResult> DecodeMessageAsync(DevEui devEui, byte[] payload, FramePort fport, string sensorDecoder)
+        public ValueTask<DecodePayloadResult> DecodeMessageAsync(DevEui devEui, byte[] payload, FramePort fport, string sensorDecoder)
         {
             sensorDecoder ??= string.Empty;
 
-            var base64Payload = ((payload?.Length ?? 0) == 0) ? string.Empty : Convert.ToBase64String(payload);
+            var decoderType = typeof(LoRaPayloadDecoder);
+            var toInvoke = decoderType.GetMethod(sensorDecoder, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase);
 
-            // Call local decoder (no "http://" in SensorDecoder)
-            if (Uri.TryCreate(sensorDecoder, UriKind.Absolute, out var url) && url.Scheme is "http")
+            if (toInvoke != null)
             {
-                // Support decoders that have a parameter in the URL
-                // http://decoder/api/sampleDecoder?x=1 -> should become http://decoder/api/sampleDecoder?x=1&devEUI=11&fport=1&payload=12345
-
-                var query = HttpUtility.ParseQueryString(url.Query);
-                query["devEUI"] = devEui.ToString();
-                query["fport"] = ((int)fport).ToString(CultureInfo.InvariantCulture);
-                query["payload"] = base64Payload;
-
-                var urlBuilder = new UriBuilder(url) { Query = query.ToString() };
-
-                if (urlBuilder.Path.EndsWith('/'))
-                    urlBuilder.Path = urlBuilder.Path[..^1];
-
-                return await CallSensorDecoderModule(urlBuilder.Uri);
+                return ValueTask.FromResult(new DecodePayloadResult(toInvoke.Invoke(null, [devEui, payload, fport])));
             }
             else
             {
-                var decoderType = typeof(LoRaPayloadDecoder);
-                var toInvoke = decoderType.GetMethod(sensorDecoder, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase);
-
-                if (toInvoke != null)
+                return ValueTask.FromResult(new DecodePayloadResult()
                 {
-                    return new DecodePayloadResult(toInvoke.Invoke(null, new object[] { devEui, payload, fport }));
-                }
-                else
-                {
-                    return new DecodePayloadResult()
-                    {
-                        Error = $"'{sensorDecoder}' decoder not found",
-                    };
-                }
-            }
-        }
-
-        private async Task<DecodePayloadResult> CallSensorDecoderModule(Uri sensorDecoderModuleUrl)
-        {
-            try
-            {
-                var response = await this.httpClientFactory.CreateClient(PayloadDecoderHttpClient.ClientName).GetAsync(sensorDecoderModuleUrl);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var badReqResult = await response.Content.ReadAsStringAsync();
-
-                    return new DecodePayloadResult()
-                    {
-                        Error = $"SensorDecoderModule '{sensorDecoderModuleUrl}' returned bad request.",
-                        ErrorDetail = badReqResult ?? string.Empty,
-                    };
-                }
-                else
-                {
-                    var externalRawResponse = await response.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrEmpty(externalRawResponse))
-                    {
-                        try
-                        {
-                            ReceivedLoRaCloudToDeviceMessage loRaCloudToDeviceMessage = null;
-                            var externalDecoderResponse = JsonConvert.DeserializeObject<Dictionary<string, object>>(externalRawResponse);
-                            if (externalDecoderResponse.TryGetValue(Constants.CloudToDeviceDecoderElementName, out var cloudToDeviceObject))
-                            {
-                                if (cloudToDeviceObject is JObject jsonObject)
-                                {
-                                    loRaCloudToDeviceMessage = jsonObject.ToObject<ReceivedLoRaCloudToDeviceMessage>();
-                                }
-
-                                _ = externalDecoderResponse.Remove(Constants.CloudToDeviceDecoderElementName);
-                            }
-
-                            return new DecodePayloadResult(externalDecoderResponse)
-                            {
-                                CloudToDeviceMessage = loRaCloudToDeviceMessage
-                            };
-                        }
-                        catch (JsonReaderException)
-                        {
-                            // not a json object, use as string
-                            return new DecodePayloadResult(externalRawResponse);
-                        }
-                    }
-                    else
-                    {
-                        // not a json object, use as string
-                        return new DecodePayloadResult(externalRawResponse);
-                    }
-                }
-            }
-            catch (HttpRequestException ex) when (ExceptionFilterUtility.True(() => this.logger.LogError($"error in decoder handling: {ex.Message}")))
-            {
-                return new DecodePayloadResult()
-                {
-                    Error = $"Call to SensorDecoderModule '{sensorDecoderModuleUrl}' failed.",
-                    ErrorDetail = ex.Message,
-                };
+                    Error = $"'{sensorDecoder}' decoder not found",
+                });
             }
         }
 
@@ -183,24 +80,6 @@ namespace LoRaWan.NetworkServer
         {
             var payloadHex = ((payload?.Length ?? 0) == 0) ? string.Empty : payload.ToHex();
             return new DecodedPayloadValue(payloadHex);
-        }
-    }
-
-    internal static class PayloadDecoderHttpClient
-    {
-        public const string ClientName = nameof(PayloadDecoderHttpClient);
-
-        public static IServiceCollection AddPayloadDecoderHttpClient(this IServiceCollection services)
-        {
-            // Decoder calls don't need proxy since they will never leave the IoT Edge device
-            _ = services.AddHttpClient(ClientName)
-                        .ConfigureHttpClient(client =>
-                        {
-                            client.DefaultRequestHeaders.Add("Connection", "Keep-Alive");
-                            client.DefaultRequestHeaders.Add("Keep-Alive", "timeout=86400");
-                        });
-
-            return services;
         }
     }
 }

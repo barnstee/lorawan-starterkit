@@ -8,21 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DecoderSample\**" />
     <Compile Remove="LoRaBasicsStationModule\**" />
     <Compile Remove="LoRaWANContainer\**" />
     <Compile Remove="Tests\**" />
-    <Compile Remove="Tools\**" />
-    <EmbeddedResource Remove="DecoderSample\**" />
     <EmbeddedResource Remove="LoRaBasicsStationModule\**" />
     <EmbeddedResource Remove="LoRaWANContainer\**" />
     <EmbeddedResource Remove="Tests\**" />
-    <EmbeddedResource Remove="Tools\**" />
-    <None Remove="DecoderSample\**" />
     <None Remove="LoRaBasicsStationModule\**" />
     <None Remove="LoRaWANContainer\**" />
     <None Remove="Tests\**" />
-    <None Remove="Tools\**" />
   </ItemGroup>
 
   <ItemGroup>

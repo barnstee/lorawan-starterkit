@@ -36,7 +36,6 @@ namespace LoRaWan.NetworkServer.BasicsStation
                     _ = loggingBuilder.AddLoRaConsoleLogger(c => c.LogLevel = logLevel);
                 })
                 .AddMemoryCache()
-                .AddHttpClient()
                 .AddSingleton(NetworkServerConfiguration)
                 .AddSingleton<ILoRaDeviceFrameCounterUpdateStrategyProvider, LoRaDeviceFrameCounterUpdateStrategyProvider>()
                 .AddSingleton<IDeduplicationStrategyFactory, DeduplicationStrategyFactory>()
