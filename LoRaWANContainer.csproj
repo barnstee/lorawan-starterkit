@@ -10,13 +10,10 @@
   <ItemGroup>
     <Compile Remove="LoRaBasicsStationModule\**" />
     <Compile Remove="LoRaWANContainer\**" />
-    <Compile Remove="Tests\**" />
     <EmbeddedResource Remove="LoRaBasicsStationModule\**" />
     <EmbeddedResource Remove="LoRaWANContainer\**" />
-    <EmbeddedResource Remove="Tests\**" />
     <None Remove="LoRaBasicsStationModule\**" />
     <None Remove="LoRaWANContainer\**" />
-    <None Remove="Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,30 +39,6 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="LoRaWanNetworkServer\Models\Eui.g.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Eui.g.cs</LastGenOutput>
-    </None>
-    <None Update="LoRaWanNetworkServer\Models\Keys.g.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Keys.g.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="LoRaWanNetworkServer\Models\Eui.g.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Eui.g.tt</DependentUpon>
-    </Compile>
-    <Compile Update="LoRaWanNetworkServer\Models\Keys.g.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Keys.g.tt</DependentUpon>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>
